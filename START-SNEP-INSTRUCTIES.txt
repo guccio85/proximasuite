@@ -1,0 +1,47 @@
+====== START SNEP - SIMPEL ======
+
+📋 INSTRUCTIES VOOR SNEP_AUTO
+
+STAP 1: Kopieëren het bestand
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Dit bestand zit hier:
+   C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche\START-SNEP.bat
+
+2. Kopie het bestand (rechts-klik → Kopieren)
+
+3. Plak het op Desktop van SNEP_AUTO (rechts-klik → Plakken)
+
+
+STAP 2: Als je wilt starten, dubbelklik op het bestand!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Ga naar Desktop van SNEP_AUTO
+
+2. Dubbelklik: START-SNEP.bat
+
+3. Een zwart venster opent
+
+4. Wacht 8 seconden...
+
+5. Browser opent automatisch met planner
+
+
+STAP 3: Je ziet dan:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Zwart venster #1: NGROK Tunnel (laat open!)
+✅ Zwart venster #2: Server npm start (laat open!)
+✅ Browser: http://localhost:3001 (je planner is klaar!)
+
+
+STAP 4: Om te stoppen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Sluit beide zwarte vensters
+2. Klaar!
+
+
+═════════════════════════════════════════════════════
+                   KLAAR! 🚀
+═════════════════════════════════════════════════════

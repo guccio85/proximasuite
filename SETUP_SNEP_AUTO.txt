@@ -1,0 +1,123 @@
+====== SETUP ACCOUNT SNEP_AUTO ======
+
+📋 ISTRUZIONI PER CONFIGURARE L'AVVIO AUTOMATICO
+
+STAP 0: Dai i permessi a SNEP_AUTO per la cartella del progetto
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(FALLO DA ORA, CON IL TUO ACCOUNT SNEPS)
+
+1. Vai a: C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche
+
+2. Tasto destro sulla cartella → Proprietà
+
+3. Scheda "Sicurezza" → Modifica
+
+4. Clicca "Aggiungi" e scrivi: SNEP_AUTO
+
+5. Dall'elenco seleziona SNEP_AUTO e spunta:
+   ☑ Modifica
+   ☑ Leggi & Esegui
+   ☑ Elenca contenuto cartella
+   ☑ Leggi
+   ☑ Scrivi
+
+6. Clicca OK → Applica → OK
+
+
+STAP 1: Accedi all'account SNEP_AUTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. In basso a sinistra clicca il tuo nome utente (angolo start menu)
+
+2. Clicca "Afmelden" (Sign out)
+
+3. Quando vedi la schermata di login, clicca:
+   "Ander account gebruiken" (Use another account)
+
+4. Username: SNEP_AUTO
+   Password: [la password che hai impostato]
+
+5. Premi INVIO
+
+
+STAP 2: Crea la cartella Opstarten (se non esiste)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Apri PowerShell come amministratore
+
+2. Copia e incolla questo comando:
+
+   New-Item -ItemType Directory -Path "C:\Users\SNEP_AUTO\AppData\Roaming\Microsoft\Windows\Startmenu\Programs\Opstarten" -Force
+
+3. Premi INVIO
+
+
+STAP 3: Verkenner - Cartella Opstarten
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Apri Verkenner (File Explorer)
+
+Copia questa indirizzo nella barra:
+  C:\Users\SNEP_AUTO\AppData\Roaming\Microsoft\Windows\Startmenu\Programs\Opstarten
+
+Premi INVIO
+
+
+STAP 4: Configura Task Scheduler (Pianificazione attività)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUESTO METODO E' PIU' AFFIDABILE DEL BATCH!
+
+1. Premi Windows + R, scrivi: taskschd.msc e premi INVIO
+
+2. A destra clicca: "Create Basic Task"
+
+3. Nome: Start SNEP
+
+4. Descrizione: Avvia automaticamente SNEP al login
+
+5. Clicca: Next
+
+
+STAP 5: Configura il Trigger
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Scegli: "At log on"
+
+2. Clicca: Next
+
+
+STAP 6: Configura l'Azione
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Scegli: "Start a program"
+
+2. Clicca: Next
+
+3. Program/script:
+   C:\Windows\System32\cmd.exe
+
+4. Arguments (COPIA TUTTO):
+   /c cd /d C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche && start PowerShell -ExecutionPolicy Bypass -File start-dev.ps1 && timeout /t 8 && start http://localhost:3001
+
+5. Clicca: Next
+
+6. Clicca: Finish
+
+
+STAP 7: Pronto!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+La prossima volta che esegui il login con SNEP_AUTO:
+✅ Automaticamente parte il server
+✅ Dopo 8 secondi si apre il browser del planner
+✅ NGROK tunnel disponibile
+✅ Sei già loggato con l'auto-login 24 ore
+✅ Tutto funziona! 🚀
+
+📱 PER IL MOBILE:
+Leggi il QR code dalla toolbar (Sidebar) con il tuo telefono
+Scorpisce la view mobile (werkplaats) già loggata
+
+
+Se hai errori:
+1. Apri il prompt e dai questo comando:
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+2. Riprova il login
+
+
+💡 TIP: Puoi stampare questo file (setup.txt) oppure mettere nel Desktop di SNEP_AUTO per consultarlo facilmente!

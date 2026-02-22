@@ -1,0 +1,113 @@
+====== SETUP TASK SCHEDULER PER SNEP_AUTO ======
+
+⚠️ FAI QUESTO CON L'ACCOUNT SNEP_AUTO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 1: Crea lo script PowerShell sul Desktop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Tasto destro sul Desktop → Nieuw → Tekstdocument
+
+2. Nomina il file: start-snep-task.ps1
+
+3. Apri il file con Kladblok (Notepad)
+
+4. COPIA E INCOLLA TUTTO QUESTO DENTRO:
+
+───────────────────────────────────────────────────
+cd "C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche"
+powershell -NoExit -ExecutionPolicy Bypass -File start-dev.ps1 &
+Start-Sleep -Seconds 8
+Start-Process "http://localhost:3001"
+───────────────────────────────────────────────────
+
+5. Salva: CTRL + S
+
+6. Chiudi il file
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 2: Apri Task Scheduler
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Premi Windows + R
+
+2. Scrivi: taskschd.msc
+
+3. Premi INVIO
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 3: Crea un nuovo Task
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. A destra clicca: "Create Basic Task"
+
+2. Nome: Start SNEP Auto
+
+3. Descrizione: Avvia SNEP automaticamente al login
+
+4. Clicca: NEXT
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 4: Scegli il Trigger (quando far partire)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Seleziona: "At log on"
+
+2. Clicca: NEXT
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 5: Scegli l'Azione (cosa fare)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Seleziona: "Start a program"
+
+2. Clicca: NEXT
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 6: Configura il programma
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Program/script (scrivi esattamente):
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+
+Arguments (scrivi esattamente):
+-ExecutionPolicy Bypass -File "C:\Users\SNEP_AUTO\Desktop\start-snep-task.ps1"
+
+NOTA: Verifica che il suo sia uguale a quello che scrivi!
+
+Clicca: NEXT
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 7: Verifica e Finisci
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Controlla che tutto sia corretto
+
+2. Clicca: FINISH
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 8: Prova subito!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Nell'elenco dei Task, trova: "Start SNEP Auto"
+
+2. Tasto destro → "Run"
+
+Se vedi:
+✅ Una finestra nera del terminale
+✅ Dopo 8 secondi si apre il browser
+
+ALLORA FUNZIONA! 🚀
+
+
+═════════════════════════════════════════════════════
+    PRONTO! La prossima volta che accedi con SNEP_AUTO
+    tutto partirà automaticamente!
+═════════════════════════════════════════════════════

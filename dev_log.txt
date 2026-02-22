@@ -1,0 +1,10 @@
+
+> snep-werkbeheer@1.0.0 dev
+> vite --port 3000 --host
+
+Port 3000 is in use, trying another one...
+
+  VITE v5.4.21  ready in 451 ms
+
+  ➜  Local:   http://localhost:3001/
+  ➜  Network: http://192.168.178.50:3001/

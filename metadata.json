@@ -1,0 +1,7 @@
+{
+  "name": "business management",
+  "description": "Professional Work Order Management Software",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

@@ -1,0 +1,158 @@
+====== INSTALLARE NGROK SU SNEP_AUTO ======
+
+⚠️ FAI QUESTO CON L'ACCOUNT SNEP_AUTO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 1: Verificare se esiste la cartella Program Files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Apri Verkenner (File Explorer)
+
+2. Clicca sulla barra dell'indirizzo in alto
+
+3. Scrivi: C:\Program Files
+
+4. Premi INVIO
+
+(Se non vedi il diritto di scrivere, cerca l'altra cartella se prova C:\Program Files (x86))
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 2: Crea una nuova cartella per NGROK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Tasto destro nello spazio vuoto
+
+2. Clicca: Nieuw → Map (Nuova cartella)
+
+3. Nomina: ngrok
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 3: Scarica NGROK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Apri il browser
+
+2. Vai a: https://ngrok.com/download
+
+3. Seleziona il tuo sistema operativo (Windows)
+
+4. Clicca sul link per scaricare
+
+5. Aspetta che il file si scarichi (ngrok-v3.x.x-windows-amd64.zip)
+
+6. Quando è pronto, apri il download
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 4: Estrai NGROK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Il file zip si apre in una finestra
+
+2. Vedi il file: ngrok.exe (e altri file)
+
+3. Seleziona TUTTI i file (CTRL + A)
+
+4. Tasto destro → Uitpakken naar (Estrai in)
+
+5. Scrivi il percorso: C:\Program Files\ngrok
+
+6. Premi INVIO e aspetta l'estrazione
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 5: Copia il file di configurazione NGROK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Vai alla cartella del progetto (Sneps Desktop):
+   C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche
+
+2. Cerca il file: ngrok.yml
+
+3. Copia questo file (CTRL + C)
+
+4. Vai a: C:\Program Files\ngrok
+
+5. Incolla il file (CTRL + V)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 6: Aggiungi NGROK al PATH di Windows
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+METODO A - Tramite GUI (più facile):
+
+1. Premi Windows + X
+
+2. Scegli: "Windows Terminal (Admin)" o "PowerShell (Admin)"
+
+3. Copia e incolla questo comando:
+
+$env:Path += ";C:\Program Files\ngrok"
+[Environment]::SetEnvironmentVariable("Path", $env:Path, [EnvironmentVariableTarget]::Machine)
+
+4. Premi INVIO
+
+5. Chiudi PowerShell
+
+
+METODO B - Tramite Impostazioni di Sistema:
+
+1. Premi Windows + I (Impostazioni)
+
+2. Vai a: Sistema → Informazioni di sistema avanzate
+
+3. Clicca: "Variabili d'ambiente"
+
+4. Sotto "Variabili di Sistema" trova: Path
+
+5. Seleziona Path e clicca: Modifica
+
+6. Clicca: Nuovo
+
+7. Scrivi: C:\Program Files\ngrok
+
+8. Clicca: OK → OK → OK
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 7: Verifica che NGROK funziona
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Apri PowerShell (come amministratore)
+
+2. Digita: ngrok --version
+
+3. Se vedi il numero della versione (es. ngrok version 3.x.x), FUNZIONA! ✅
+
+4. Se vedi "ngrok: comando non trovato", allora:
+   - Riavvia il computer
+   - Riprova il comando
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 8: Modifica lo script di avvio
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ora puoi usare il file originale sul Desktop di SNEP_AUTO:
+
+start-snep-task.ps1
+
+Che contiene:
+───────────────────────────────────────────────────
+cd "C:\Users\Sneps\Desktop\SNEP_SMART_v6 - kopia modifiche"
+powershell -NoExit -ExecutionPolicy Bypass -File start-dev.ps1 &
+Start-Sleep -Seconds 8
+Start-Process "http://localhost:3001"
+───────────────────────────────────────────────────
+
+Ora funzionerà perché NGROK è nel PATH!
+
+
+═════════════════════════════════════════════════════
+    PRONTO! NGROK è installato globalmente.
+    La Task Scheduler farà partire NGROK + npm start
+    automaticamente al login di SNEP_AUTO!
+═════════════════════════════════════════════════════
