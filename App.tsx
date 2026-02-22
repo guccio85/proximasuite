@@ -11,7 +11,7 @@ import { WerkplaatsView } from './components/WerkplaatsView';
 import { SubcontractorDirectory } from './components/SubcontractorDirectory';
 import { AddOrderModal } from './components/AddOrderModal'; 
 import { SetupWizard } from './components/SetupWizard';
-import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence } from './types';
+import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact } from './types';
 import * as SupabaseAPI from './supabaseAPI';
 
 // Default Task Colors
@@ -224,9 +224,10 @@ const App: React.FC = () => {
       
       setWorkers(data.workers || []);
       setWorkerPasswords(data.workerPasswords || {});
-      if (data.settings?.workerContacts) {
+      if (data.settings && data.settings.workerContacts) {
         // Merge workerContacts from settings into state
-        setCompanySettings(prev => ({ ...prev, ...data.settings, workerContacts: data.settings.workerContacts }));
+        const settings = data.settings;
+        setCompanySettings(prev => ({ ...prev, ...settings, workerContacts: settings.workerContacts }));
       }
       setAvailabilities(data.availabilities || []);
       setRecurringAbsences(data.recurringAbsences || []);
@@ -474,7 +475,8 @@ const App: React.FC = () => {
   };
 
   const handleUpdateContacts = async (contacts: Record<string, WorkerContact>) => {
-      const updated = { ...companySettings, workerContacts: contacts } as typeof companySettings;
+      if (!companySettings) return;
+      const updated = { ...companySettings, workerContacts: contacts };
       setCompanySettings(updated);
       await SupabaseAPI.saveCompanySettings(updated);
       saveData({ settings: updated });

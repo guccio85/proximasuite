@@ -43,7 +43,11 @@ export const SubcontractorDirectory: React.FC<SubcontractorDirectoryProps> = ({
         address: newSubAddress.trim() || undefined,
         contactPerson: newSubContact.trim() || undefined
       };
-      const updated = { ...companySettings, subcontractors: [...(companySettings?.subcontractors || []), newSub] };
+      const updated = { 
+        ...companySettings, 
+        name: companySettings?.name || '',
+        subcontractors: [...(companySettings?.subcontractors || []), newSub] 
+      } as CompanySettings;
       onUpdateSettings(updated);
       setNewSubName('');
       setNewSubEmail('');
@@ -54,7 +58,11 @@ export const SubcontractorDirectory: React.FC<SubcontractorDirectoryProps> = ({
   };
 
   const handleDeleteSub = (id: string) => {
-    const updated = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
+    const updated = { 
+      ...companySettings, 
+      name: companySettings?.name || '',
+      subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) 
+    } as CompanySettings;
     onUpdateSettings(updated);
   };
 

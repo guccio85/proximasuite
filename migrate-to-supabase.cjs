@@ -114,7 +114,7 @@ if (data.orders && data.orders.length > 0) {
                     created_at: Date.now(),                 // BIGINT
                     assigned_worker: order.assignedWorker || null,
                     assignment_type: order.assignmentType || null,
-                    data: order.data || null,               // JSONB
+                    data: order,              // JSONB - ✅ L'intero oggetto order
                     updated_at: new Date().toISOString()
                 });
 

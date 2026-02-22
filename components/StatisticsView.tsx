@@ -150,13 +150,14 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
 
       filteredOrders.forEach(order => {
           if (order.hourBudget) {
-              cats.WVB.budget += Number(order.hourBudget.wvb) || 0;
-              cats.KBW.budget += Number(order.hourBudget.kbw) || 0;
-              cats.PLW.budget += Number(order.hourBudget.plw) || 0;
-              cats.RVS.budget += Number(order.hourBudget.rvs) || 0;
-              cats.MONTAGE.budget += Number(order.hourBudget.montage) || 0;
-              cats.REIS.budget += Number(order.hourBudget.reis) || 0;
-              totalBudget += (Number(order.hourBudget.wvb) || 0) + (Number(order.hourBudget.kbw) || 0) + (Number(order.hourBudget.plw) || 0) + (Number(order.hourBudget.rvs) || 0) + (Number(order.hourBudget.montage) || 0) + (Number(order.hourBudget.reis) || 0);
+              const budget = order.hourBudget ?? {};
+              cats.WVB.budget += Number(budget.wvb) || 0;
+              cats.KBW.budget += Number(budget.kbw) || 0;
+              cats.PLW.budget += Number(budget.plw) || 0;
+              cats.RVS.budget += Number(budget.rvs) || 0;
+              cats.MONTAGE.budget += Number(budget.montage) || 0;
+              cats.REIS.budget += Number(budget.reis) || 0;
+              totalBudget += (Number(budget.wvb) || 0) + (Number(budget.kbw) || 0) + (Number(budget.plw) || 0) + (Number(budget.rvs) || 0) + (Number(budget.montage) || 0) + (Number(budget.reis) || 0);
           }
 
           if (order.timeLogs) {

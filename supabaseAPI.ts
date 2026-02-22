@@ -12,13 +12,15 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching orders:', error);
+    console.error('❌ Error fetching orders from Supabase:', error);
     return [];
   }
   
+  console.log('📦 Supabase raw data received:', data?.length || 0, 'rows');
+  
   // Converti da formato Supabase a formato app
   // IMPORTANTE: Se row.data è null/undefined, ricostruiamo l'oggetto dai campi delle colonne
-  return (data || []).map((row: any) => {
+  const orders = (data || []).map((row: any) => {
     if (row.data && typeof row.data === 'object') {
       // Se esiste JSONB data, usalo ma assicurati di sovrascrivere con i campi delle colonne per consistenza
       return {
@@ -38,6 +40,7 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
       };
     } else {
       // Se row.data è null, ricostruiamo l'oggetto minimo dai campi delle colonne
+      console.warn('⚠️ Order with null data field, using column values. ID:', row.id);
       return {
         id: row.id,
         orderNumber: row.order_number || '',
@@ -57,22 +60,30 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
       };
     }
   });
+  
+  console.log('✅ Orders converted:', orders.length, '| Sample:', orders.slice(0, 2).map(o => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    status: o.status
+  })));
+  
+  return orders;
 };
 
 export const saveOrder = async (order: WorkOrder): Promise<boolean> => {
   const row = {
     id: order.id,
-    order_number: order.orderNumber,
-    opdrachtgever: order.opdrachtgever,
-    project_ref: order.projectRef,
-    address: order.address,
-    scheduled_date: order.scheduledDate,
-    scheduled_end_date: order.scheduledEndDate,
-    material: order.material,
-    status: order.status,
-    created_at: order.createdAt,
-    assigned_worker: order.assignedWorker,
-    assignment_type: order.assignmentType,
+    order_number: order.orderNumber ?? '',
+    opdrachtgever: order.opdrachtgever ?? '',
+    project_ref: order.projectRef ?? null,
+    address: order.address ?? '',
+    scheduled_date: order.scheduledDate ?? null,
+    scheduled_end_date: order.scheduledEndDate ?? null,
+    material: order.material ?? '',
+    status: order.status ?? 'In afwachting',
+    created_at: order.createdAt ?? new Date().toISOString(),
+    assigned_worker: order.assignedWorker ?? null,
+    assignment_type: order.assignmentType ?? null,
     data: order, // Salva l'oggetto completo in JSONB
     updated_at: new Date().toISOString()
   };
@@ -91,11 +102,11 @@ export const saveOrder = async (order: WorkOrder): Promise<boolean> => {
 export const saveAllOrders = async (orders: WorkOrder[]): Promise<boolean> => {
   const rows = orders.map(order => ({
     id: order.id,
-    order_number: order.orderNumber,
-    opdrachtgever: order.opdrachtgever,
-    scheduled_date: order.scheduledDate,
-    status: order.status,
-    created_at: order.createdAt,
+    order_number: order.orderNumber ?? '',
+    opdrachtgever: order.opdrachtgever ?? '',
+    scheduled_date: order.scheduledDate ?? null,
+    status: order.status ?? 'In afwachting',
+    created_at: order.createdAt ?? new Date().toISOString(),
     data: order,
     updated_at: new Date().toISOString()
   }));
