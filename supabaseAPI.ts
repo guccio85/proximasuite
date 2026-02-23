@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, GlobalDay, WorkLog, TimeLog } from './types';
+import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, GlobalDay, WorkLog, TimeLog, TaskColors } from './types';
 
 // ============================================
 // WORK ORDERS
@@ -13,31 +13,50 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
   
   if (error) {
     console.error('❌ Error fetching orders from Supabase:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
     return [];
   }
   
-  console.log('📦 Supabase raw data received:', data?.length || 0, 'rows');
+  if (!data || data.length === 0) {
+    console.warn('⚠️ No orders found in Supabase');
+    return [];
+  }
+  
+  console.log('📦 Supabase raw data received:', data.length, 'rows');
+  console.log('📦 First raw row sample:', JSON.stringify(data[0], null, 2).substring(0, 500));
   
   // Converti da formato Supabase a formato app
   // IMPORTANTE: Se row.data è null/undefined, ricostruiamo l'oggetto dai campi delle colonne
-  const orders = (data || []).map((row: any) => {
+  const orders = (data || []).map((row: any, index: number) => {
+    // Validazione base
+    if (!row.id) {
+      console.error(`❌ Order at index ${index} has no ID, skipping`);
+      return null;
+    }
+    
     if (row.data && typeof row.data === 'object') {
-      // Se esiste JSONB data, usalo ma assicurati di sovrascrivere con i campi delle colonne per consistenza
-      return {
+      // Se esiste JSONB data, usalo come base e sovrascrivi con campi delle colonne
+      const order = {
         ...row.data,
-        id: row.id,
-        orderNumber: row.order_number || row.data.orderNumber,
-        opdrachtgever: row.opdrachtgever || row.data.opdrachtgever,
-        projectRef: row.project_ref || row.data.projectRef,
-        address: row.address || row.data.address,
-        scheduledDate: row.scheduled_date || row.data.scheduledDate,
-        scheduledEndDate: row.scheduled_end_date || row.data.scheduledEndDate,
-        material: row.material || row.data.material,
-        status: row.status || row.data.status || 'In afwachting', // ⚠️ CRITICO: Garantisce sempre uno status
-        createdAt: row.created_at || row.data.createdAt,
-        assignedWorker: row.assigned_worker || row.data.assignedWorker,
-        assignmentType: row.assignment_type || row.data.assignmentType,
+        id: row.id, // ✅ SEMPRE usa l'ID della tabella (che è l'ID originale)
+        orderNumber: row.order_number || row.data.orderNumber || '',
+        opdrachtgever: row.opdrachtgever || row.data.opdrachtgever || '',
+        projectRef: row.project_ref || row.data.projectRef || '',
+        address: row.address || row.data.address || '',
+        scheduledDate: row.scheduled_date || row.data.scheduledDate || '',
+        scheduledEndDate: row.scheduled_end_date || row.data.scheduledEndDate || '',
+        material: row.material || row.data.material || '',
+        status: row.status || row.data.status || 'In afwachting',
+        createdAt: row.created_at || row.data.createdAt || Date.now(),
+        assignedWorker: row.assigned_worker || row.data.assignedWorker || '',
+        assignmentType: row.assignment_type || row.data.assignmentType || '',
+        // Assicura che i campi essenziali esistano
+        hourBudget: row.data.hourBudget || { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
+        photos: row.data.photos || [],
+        timeLogs: row.data.timeLogs || [],
+        description: row.data.description || '',
       };
+      return order;
     } else {
       // Se row.data è null, ricostruiamo l'oggetto minimo dai campi delle colonne
       console.warn('⚠️ Order with null data field, using column values. ID:', row.id);
@@ -50,8 +69,8 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
         scheduledDate: row.scheduled_date || '',
         scheduledEndDate: row.scheduled_end_date || '',
         material: row.material || '',
-        status: row.status || 'In afwachting', // ⚠️ Default status
-        createdAt: row.created_at || new Date().toISOString(),
+        status: row.status || 'In afwachting',
+        createdAt: row.created_at || Date.now(),
         description: '',
         hourBudget: { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
         deliveryDate: '',
@@ -59,13 +78,19 @@ export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
         timeLogs: [],
       };
     }
-  });
+  }).filter(order => order !== null);
   
-  console.log('✅ Orders converted:', orders.length, '| Sample:', orders.slice(0, 2).map(o => ({
-    id: o.id,
-    orderNumber: o.orderNumber,
-    status: o.status
-  })));
+  console.log('✅ Orders converted successfully:', orders.length);
+  if (orders.length > 0) {
+    console.log('📊 Sample orders:', orders.slice(0, 3).map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      scheduledDate: o.scheduledDate
+    })));
+  } else {
+    console.warn('⚠️ No orders to display after conversion');
+  }
   
   return orders;
 };
@@ -227,35 +252,191 @@ export const updateWorkerContacts = async (contacts: Record<string, any>): Promi
 // ============================================
 
 export const fetchCompanySettings = async (): Promise<CompanySettings | null> => {
-  const { data, error } = await supabase
-    .from('company_settings')
-    .select('*')
-    .eq('id', 'default')
-    .single();
+  try {
+    // Fetch basic settings
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('company_settings')
+      .select('*')
+      .eq('id', 'default')
+      .single();
 
-  if (error) {
-    console.error('Error fetching settings:', error);
+    if (settingsError) {
+      console.error('Error fetching company settings:', settingsError);
+      return null;
+    }
+
+    // Fetch task colors
+    const { data: colorsData, error: colorsError } = await supabase
+      .from('task_colors')
+      .select('*');
+
+    const taskColors: TaskColors = {
+      kbw: '#f5e000',
+      plw: '#026df7',
+      montage: '#fa0000',
+      werkvoorbereid: '#795420',
+      holiday: '#2deb70',
+      adv: '#9762d0'
+    };
+    
+    if (!colorsError && colorsData) {
+      colorsData.forEach((row: any) => {
+        if (row.task_key in taskColors) {
+          (taskColors as any)[row.task_key] = row.color;
+        }
+      });
+    }
+
+    // Fetch departments with activities
+    const { data: deptsData, error: deptsError } = await supabase
+      .from('departments')
+      .select('*')
+      .order('sort_order');
+
+    const departments: any[] = [];
+    if (!deptsError && deptsData) {
+      for (const dept of deptsData) {
+        const { data: activitiesData } = await supabase
+          .from('department_activities')
+          .select('*')
+          .eq('department_id', dept.id)
+          .order('sort_order');
+
+        departments.push({
+          id: dept.id,
+          name: dept.name,
+          activities: (activitiesData || []).map((a: any) => a.activity)
+        });
+      }
+    }
+
+    // Fetch subcontractors
+    const { data: subsData, error: subsError } = await supabase
+      .from('subcontractors')
+      .select('*');
+
+    const subcontractors: any[] = [];
+    if (!subsError && subsData) {
+      subsData.forEach((sub: any) => {
+        subcontractors.push({
+          id: sub.id,
+          name: sub.name,
+          email: sub.email,
+          phone: sub.phone,
+          address: sub.address,
+          contactPerson: sub.contact_person
+        });
+      });
+    }
+
+    // Construct CompanySettings object
+    const settings: CompanySettings = {
+      name: settingsData?.company_name || 'SNEP',
+      adminPassword: settingsData?.admin_password || '1111',
+      taskColors,
+      departments,
+      mobilePermissions: settingsData?.mobile_permissions || {
+        showClientName: true,
+        allowPhotoUpload: true,
+        allowDrawingsView: true
+      },
+      workerPasswords: {}, // Loaded separately from workers table
+      subcontractors
+    };
+
+    return settings;
+  } catch (error) {
+    console.error('Error fetching company settings:', error);
     return null;
   }
-
-  return data?.data || null;
 };
 
 export const saveCompanySettings = async (settings: CompanySettings): Promise<boolean> => {
-  const { error } = await supabase
-    .from('company_settings')
-    .upsert({
-      id: 'default',
-      company_id: 'default',
-      data: settings,
-      updated_at: new Date().toISOString()
-    });
+  try {
+    // Save basic settings
+    const { error: settingsError } = await supabase
+      .from('company_settings')
+      .upsert({
+        id: 'default',
+        company_name: settings.name,
+        admin_password: settings.adminPassword,
+        mobile_permissions: settings.mobilePermissions,
+        updated_at: new Date().toISOString()
+      });
 
-  if (error) {
-    console.error('Error saving settings:', error);
+    if (settingsError) throw settingsError;
+
+    // Save task colors
+    if (settings.taskColors) {
+      for (const [key, color] of Object.entries(settings.taskColors)) {
+        await supabase
+          .from('task_colors')
+          .upsert({
+            id: key,
+            task_key: key,
+            color: color
+          });
+      }
+    }
+
+    // Save departments (simplified - full implementation would handle activities)
+    if (settings.departments) {
+      for (let i = 0; i < settings.departments.length; i++) {
+        const dept = settings.departments[i];
+        const { error: deptError } = await supabase
+          .from('departments')
+          .upsert({
+            id: dept.id,
+            name: dept.name,
+            sort_order: i
+          });
+
+        if (deptError) {
+          console.error('Error saving department:', deptError);
+          continue;
+        }
+
+        // Delete existing activities and insert new ones
+        await supabase
+          .from('department_activities')
+          .delete()
+          .eq('department_id', dept.id);
+
+        if (dept.activities && dept.activities.length > 0) {
+          for (let j = 0; j < dept.activities.length; j++) {
+            await supabase
+              .from('department_activities')
+              .insert({
+                department_id: dept.id,
+                activity: dept.activities[j],
+                sort_order: j
+              });
+          }
+        }
+      }
+    }
+
+    // Save subcontractors
+    if (settings.subcontractors) {
+      for (const sub of settings.subcontractors) {
+        await supabase
+          .from('subcontractors')
+          .upsert({
+            id: sub.id,
+            name: sub.name,
+            email: sub.email,
+            phone: sub.phone,
+            address: sub.address,
+            contact_person: sub.contactPerson
+          });
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error saving company settings:', error);
     return false;
   }
-  return true;
 };
 
 // ============================================
