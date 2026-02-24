@@ -515,6 +515,63 @@ const App: React.FC = () => {
       setSelectedDayConfig(null);
   };
 
+  // --- HANDLERS SETTINGS ---
+
+  // Elimina tutti gli ordini completati
+  const handleDeleteCompleted = async () => {
+    const completed = orders.filter(o => o.status === OrderStatus.COMPLETED);
+    for (const o of completed) {
+      await SupabaseAPI.deleteOrder(o.id);
+    }
+    const remaining = orders.filter(o => o.status !== OrderStatus.COMPLETED);
+    setOrders(remaining);
+    saveData({ orders: remaining });
+  };
+
+  // Download backup JSON
+  const handleBackup = async () => {
+    const data = await SupabaseAPI.fetchAllData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `snep_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  };
+
+  // Ripristina backup JSON
+  const handleRestore = async (file: File) => {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data) return;
+    if (data.orders) {
+      for (const o of data.orders) await SupabaseAPI.saveOrder(o);
+      setOrders(data.orders);
+    }
+    if (data.settings) {
+      await SupabaseAPI.saveCompanySettings(data.settings);
+      setCompanySettings(data.settings);
+    }
+    if (data.workers) {
+      for (const w of data.workers) await SupabaseAPI.saveWorker(w);
+      setWorkers(data.workers);
+    }
+    alert('Backup ripristinato con successo!');
+  };
+
+  // Riavvia setup wizard
+  const handleTriggerWizard = () => {
+    localStorage.removeItem('snep_settings');
+    setCompanySettings(null);
+  };
+
+  // Reset totale database
+  const handleTotalReset = async () => {
+    if (!window.confirm('ATTENZIONE: Questo cancellerà TUTTI i dati. Continuare?')) return;
+    await SupabaseAPI.deleteAllData();
+    localStorage.clear();
+    window.location.reload();
+  };
+
   // Derived state
   const sortedOrders = [...orders].sort((a, b) => (a.scheduledDate || '').localeCompare(b.scheduledDate || ''));
 
@@ -1130,7 +1187,11 @@ const App: React.FC = () => {
                     scale={uiScale} onScaleChange={setUiScale}
                     fontSize={uiFontSize} onFontSizeChange={setUiFontSize}
                     tableFontSize={tableFontSize} onTableFontSizeChange={setTableFontSize}
-                    onDeleteCompleted={() => {}}
+                    onDeleteCompleted={handleDeleteCompleted}
+                    onBackup={handleBackup}
+                    onRestore={handleRestore}
+                    onTriggerWizard={handleTriggerWizard}
+                    onTotalReset={handleTotalReset}
                     primaryColor="#2563eb" onPrimaryColorChange={() => {}}
                     sidebarColor="#0f172a" onSidebarColorChange={() => {}}
                     sidebarTextColor="#ffffff" onSidebarTextColorChange={() => {}}

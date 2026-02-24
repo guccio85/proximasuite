@@ -693,6 +693,27 @@ export const fetchAllData = async () => {
   }
 };
 
+export const deleteAllData = async (): Promise<boolean> => {
+  try {
+    await supabase.from('work_orders').delete().neq('id', '');
+    await supabase.from('workers').delete().neq('id', '');
+    await supabase.from('availabilities').delete().neq('id', '');
+    await supabase.from('recurring_absences').delete().neq('id', '');
+    await supabase.from('global_days').delete().neq('date', '');
+    await supabase.from('work_logs').delete().neq('id', '');
+    await supabase.from('time_logs').delete().neq('id', '');
+    await supabase.from('task_colors').delete().neq('id', '');
+    await supabase.from('departments').delete().neq('id', '');
+    await supabase.from('department_activities').delete().gt('id', 0);
+    await supabase.from('subcontractors').delete().neq('id', '');
+    await supabase.from('company_settings').delete().neq('id', '');
+    return true;
+  } catch (error) {
+    console.error('Error deleting all data:', error);
+    return false;
+  }
+};
+
 export const saveAllData = async (data: {
   orders?: WorkOrder[];
   workers?: string[];
