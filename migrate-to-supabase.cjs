@@ -13,8 +13,8 @@ const crypto = require('crypto');
 
 // 🔑 Supabase client (con la tua anon key)
 const supabase = createClient(
-  'https://vtzbyxcephundgllvrnu.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0emJ5eGNlcGh1bmRnbGx2cm51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NzkyOTAsImV4cCI6MjA4NzM1NTI5MH0.nUtniRGqV6JldYzweXZUxTkThYTHGLvqlh_kg0JRQxo'
+  'https://rutbuafxlptyajbmxgyr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1dGJ1YWZ4bHB0eWFqYm14Z3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NzcwMzIsImV4cCI6MjA4NzQ1MzAzMn0.C3J8Kn_tQKHPs80Y3Qid_wi6RTdaAZXAR2ySwl7iG0Q'
 );
 
 async function main() {

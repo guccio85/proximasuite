@@ -16,7 +16,7 @@ SNEP SMART is now migrated to use **Supabase** as a cloud backend, enabling:
 ### Step 1: Create Supabase Database Tables ⚙️
 
 1. Log into [Supabase Dashboard](https://app.supabase.com)
-2. Navigate to your project: `https://app.supabase.com/project/vtzbyxccephundgllvrnu`
+2. Navigate to your project: `https://app.supabase.com/project/rutbuafxlptyajbmxgyr`
 3. Go to **SQL Editor** (left sidebar)
 4. Click **"+ New Query"**
 5. Copy the entire contents of `supabase_schema.sql` from this project
@@ -135,8 +135,8 @@ The app will:
 The Supabase credentials are currently hardcoded in `supabaseClient.ts`. For production, move them to `.env.local`:
 
 ```env
-VITE_SUPABASE_URL=https://vtzbyxccephundgllvrnu.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_URL=https://rutbuafxlptyajbmxgyr.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1dGJ1YWZ4bHB0eWFqYm14Z3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NzcwMzIsImV4cCI6MjA4NzQ1MzAzMn0.C3J8Kn_tQKHPs80Y3Qid_wi6RTdaAZXAR2ySwl7iG0Q
 ```
 
 Then update [supabaseClient.ts](supabaseClient.ts):

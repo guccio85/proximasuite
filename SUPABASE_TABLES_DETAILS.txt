@@ -1,0 +1,137 @@
+# Dettaglio Tabelle Supabase per SNEP SMART
+
+---
+
+## 1. work_orders
+- id: TEXT (PK)
+- order_number: TEXT
+- opdrachtgever: TEXT
+- project_ref: TEXT
+- address: TEXT
+- scheduled_date: TEXT
+- scheduled_end_date: TEXT
+- material: TEXT
+- status: TEXT
+- created_at: BIGINT
+- assigned_worker: TEXT
+- assignment_type: TEXT
+- data: JSONB (oggetto ordine completo)
+- updated_at: TIMESTAMP
+
+**Note:**
+- Il campo `data` contiene tutti i dettagli aggiuntivi: hourBudget, photos, drawings, timeLogs, note, requiredTasks, preservationParts, preservationType, tutte le date, worker assegnati, isSubcontracted, subcontractorName, ecc.
+
+---
+
+## 2. workers
+- id: TEXT (PK)
+- name: TEXT (unico)
+- password: TEXT (PIN o password)
+- contact_data: JSONB (opzionale)
+- created_at: TIMESTAMP
+
+---
+
+## 3. availabilities
+- id: TEXT (PK)
+- worker: TEXT
+- date: TEXT
+- type: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 4. global_days
+- id: SERIAL (PK)
+- date: TEXT (unico)
+- type: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 5. work_logs
+- id: TEXT (PK)
+- order_id: TEXT
+- worker: TEXT
+- date: TEXT
+- hours: NUMERIC
+- note: TEXT
+- timestamp: BIGINT
+- category: TEXT
+- activity: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 6. company_settings
+- id: TEXT (PK, default 'default')
+- company_name: TEXT
+- admin_password: TEXT
+- mobile_permissions: JSONB (showClientName, allowPhotoUpload, allowDrawingsView)
+- updated_at: TIMESTAMP
+
+---
+
+## 7. task_colors
+- id: TEXT (PK)
+- task_key: TEXT (unico)
+- color: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 8. departments
+- id: TEXT (PK)
+- name: TEXT
+- sort_order: INTEGER
+- created_at: TIMESTAMP
+
+---
+
+## 9. department_activities
+- id: SERIAL (PK)
+- department_id: TEXT (FK su departments)
+- activity: TEXT
+- sort_order: INTEGER
+- created_at: TIMESTAMP
+
+---
+
+## 10. subcontractors
+- id: TEXT (PK)
+- name: TEXT
+- email: TEXT
+- phone: TEXT
+- address: TEXT
+- contact_person: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 11. recurring_absences
+- id: TEXT (PK)
+- worker: TEXT
+- type: TEXT
+- time_of_day: TEXT
+- day_of_week: INTEGER
+- start_date: TEXT
+- number_of_weeks: INTEGER
+- note: TEXT
+- created_at: TIMESTAMP
+
+---
+
+## 12. time_logs
+- id: TEXT (PK)
+- worker: TEXT
+- date: TEXT
+- hours: NUMERIC
+- note: TEXT
+- timestamp: BIGINT
+- category: TEXT
+- activity: TEXT
+- created_at: TIMESTAMP
+
+---
+
+**Ogni tabella corrisponde a una "categoria" di dati in database.json.**
