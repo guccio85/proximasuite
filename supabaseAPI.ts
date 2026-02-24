@@ -331,19 +331,19 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
 
     // Construct CompanySettings object
     const settings: CompanySettings = {
-      name: settingsData?.company_name || 'SNEP',
+      name: settingsData?.company_name || '',
+      logoUrl: settingsData?.logo_url || undefined,
+      primaryColor: settingsData?.primary_color || undefined,
+      taskColors: undefined, // Loaded separately
       adminPassword: settingsData?.admin_password || '1111',
-      taskColors,
-      departments,
-      mobilePermissions: settingsData?.mobile_permissions || {
-        showClientName: true,
-        allowPhotoUpload: true,
-        allowDrawingsView: true
-      },
+      adminProfiles: settingsData?.admin_profiles || [],
+      departments: undefined, // Loaded separately
+      subcontractors: undefined, // Loaded separatamente
+      mobilePermissions: settingsData?.mobile_permissions || undefined,
       workerPasswords: {}, // Loaded separately from workers table
-      subcontractors
+      workerContacts: {}, // Loaded separately from workers table
+      security: undefined
     };
-
     return settings;
   } catch (error) {
     console.error('Error fetching company settings:', error);
@@ -360,6 +360,7 @@ export const saveCompanySettings = async (settings: CompanySettings): Promise<bo
         id: 'default',
         company_name: settings.name,
         admin_password: settings.adminPassword,
+        admin_profiles: settings.adminProfiles || [],
         mobile_permissions: settings.mobilePermissions,
         updated_at: new Date().toISOString()
       });

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LayoutGrid, Minimize, Maximize, Tv, Calendar as CalendarIcon, X, Check, FileText, Loader2, Save, Printer, Plus, Minus, AlertCircle } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -478,6 +477,10 @@ const App: React.FC = () => {
       if (!companySettings) return;
       const updated = { ...companySettings, workerContacts: contacts };
       setCompanySettings(updated);
+      // Salva i contatti anche nella tabella workers
+      for (const [name, contactData] of Object.entries(contacts)) {
+        await SupabaseAPI.saveWorker(name, workerPasswords[name] || undefined, contactData);
+      }
       await SupabaseAPI.saveCompanySettings(updated);
       saveData({ settings: updated });
   };
@@ -1638,4 +1641,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;    
+export default App;

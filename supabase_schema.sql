@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS company_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
   company_name TEXT NOT NULL,
   admin_password TEXT NOT NULL,
+  admin_profiles JSONB, -- [{id, name, password, role, permissions}]
   mobile_permissions JSONB, -- {showClientName, allowPhotoUpload, allowDrawingsView}
   updated_at TIMESTAMP DEFAULT NOW()
 );
