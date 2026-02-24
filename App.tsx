@@ -223,17 +223,12 @@ const App: React.FC = () => {
       
       setWorkers(data.workers || []);
       setWorkerPasswords(data.workerPasswords || {});
-      if (data.settings && data.settings.workerContacts) {
-        // Merge workerContacts from settings into state
-        const settings = data.settings;
-        setCompanySettings(prev => ({ ...prev, ...settings, workerContacts: settings.workerContacts }));
-      }
       setAvailabilities(data.availabilities || []);
       setRecurringAbsences(data.recurringAbsences || []);
       setGlobalDays(data.globalDays || []); 
       setWorkLogs(data.workLogs || []);
       
-      // Load Settings if they exist
+      // Load Settings - workerContacts già inclusi da fetchAllData
       if (data.settings && data.settings.name) {
          setCompanySettings(data.settings);
          localStorage.setItem('snep_settings', JSON.stringify(data.settings));
@@ -305,10 +300,15 @@ const App: React.FC = () => {
         setWorkerPasswords(serverWorkerPasswords);
         console.log('🔄 Password aggiornate da Supabase');
       }
-      if (serverData.settings && JSON.stringify(serverData.settings) !== JSON.stringify(current.companySettings)) {
-        setCompanySettings(serverData.settings);
-        if (serverData.settings.taskColors) setTaskColors(serverData.settings.taskColors);
-        console.log('🔄 Impostazioni aggiornate da Supabase');
+      // Merge workerContacts (già inclusi in serverData.settings da fetchAllData)
+      if (serverData.settings) {
+        const serverSettingsStr = JSON.stringify(serverData.settings);
+        const currentSettingsStr = JSON.stringify(current.companySettings);
+        if (serverSettingsStr !== currentSettingsStr) {
+          setCompanySettings(serverData.settings);
+          if (serverData.settings.taskColors) setTaskColors(serverData.settings.taskColors);
+          console.log('🔄 Impostazioni aggiornate da Supabase');
+        }
       }
     } catch (e) {
       console.error('❌ Sync failed:', e);

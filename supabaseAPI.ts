@@ -329,19 +329,19 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
       });
     }
 
-    // Construct CompanySettings object
+    // Construct CompanySettings object (include ALL fetched data)
     const settings: CompanySettings = {
       name: settingsData?.company_name || '',
       logoUrl: settingsData?.logo_url || undefined,
       primaryColor: settingsData?.primary_color || undefined,
-      taskColors: undefined, // Loaded separately
+      taskColors: taskColors, // Include fetched colors
       adminPassword: settingsData?.admin_password || '1111',
       adminProfiles: settingsData?.admin_profiles || [],
-      departments: undefined, // Loaded separately
-      subcontractors: undefined, // Loaded separatamente
+      departments: departments.length > 0 ? departments : undefined, // Include fetched departments
+      subcontractors: subcontractors.length > 0 ? subcontractors : undefined, // Include fetched subcontractors
       mobilePermissions: settingsData?.mobile_permissions || undefined,
       workerPasswords: {}, // Loaded separately from workers table
-      workerContacts: {}, // Loaded separately from workers table
+      workerContacts: {}, // Merged in fetchAllData
       security: undefined
     };
     return settings;
@@ -660,12 +660,18 @@ export const fetchAllData = async () => {
       fetchAllWorkLogs()
     ]);
 
+    // Merge workerContacts from workers table into settings
+    const settingsWithContacts = settingsData ? {
+      ...settingsData,
+      workerContacts: workersData.workerContacts || {}
+    } : null;
+
     return {
       orders: ordersData,
       workers: workersData.workers,
       workerPasswords: workersData.workerPasswords,
       workerContacts: workersData.workerContacts,
-      settings: settingsData,
+      settings: settingsWithContacts,
       availabilities: availsData,
       recurringAbsences: absencesData,
       globalDays: globalDaysData,
