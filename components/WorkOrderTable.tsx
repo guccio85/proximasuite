@@ -536,7 +536,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                 </th>
                 <th style={{ width: colWidths.treatment, minWidth: colWidths.treatment, maxWidth: colWidths.treatment, left: posTreat, top: `${MONTH_HEADER_HEIGHT + PRESENCE_ROW_HEIGHT}px`, height: `${headerHeight}px`, fontSize: `${effectiveFontSize}px`, padding: 0, ...borderStyle }} className="sticky z-[50] bg-gray-100 relative shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                     <div className="flex items-center justify-center w-full h-full">
-                        <PaintBucket size={14} className="mx-auto" />
+                        <PaintBucket size={16} className="mx-auto text-indigo-600" />
                     </div>
                 </th>
                 <th style={{ width: colWidths.description, minWidth: colWidths.description, left: posDesc, top: `${MONTH_HEADER_HEIGHT + PRESENCE_ROW_HEIGHT}px`, height: `${headerHeight}px`, padding: 0, ...borderStyle }} className="sticky z-[50] bg-gray-100 relative shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)]">
@@ -626,6 +626,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                                 )}
 
                                 {conflicts.length > 0 && <div><AlertTriangle size={'1.2em'} className="text-red-600 animate-pulse shrink-0" /></div>}
+                                {order.missingAssignment && <div title="Ditta/lavoratore mancante"><AlertTriangle size={'1.1em'} className="text-amber-500 animate-pulse shrink-0" /></div>}
                                 <div className="truncate whitespace-nowrap"><LongPressEditable value={order.orderNumber} onSave={(val) => onInlineUpdate && onInlineUpdate(order.id, 'orderNumber', val)} /></div>
                             </div>
                         </div>
@@ -788,11 +789,11 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
 
                 {fillerRows.map((_, idx) => (
                     <tr key={`filler-${idx}`} className="bg-white hover:bg-gray-50/50" style={{ height: `${uniformRowHeight}px` }}>
-                        <td style={{ ...unifiedRowStyle, left: posOrder, ...borderStyle }} className="sticky z-30 bg-white">&nbsp;</td>
-                        <td style={{ ...unifiedRowStyle, left: posClient, ...borderStyle }} className="sticky z-30 bg-white">&nbsp;</td>
-                        <td style={{ ...unifiedRowStyle, left: posProject, ...borderStyle }} className="sticky z-30 bg-white">&nbsp;</td>
-                        <td style={{ ...unifiedRowStyle, left: posTreat, ...borderStyle }} className="sticky z-30 bg-white">&nbsp;</td>
-                        <td style={{ ...unifiedRowStyle, left: posDesc, ...borderStyle }} className="sticky z-30 bg-white">&nbsp;</td>
+                        <td style={{ ...unifiedRowStyle, left: posOrder, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
+                        <td style={{ ...unifiedRowStyle, left: posClient, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
+                        <td style={{ ...unifiedRowStyle, left: posProject, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
+                        <td style={{ ...unifiedRowStyle, left: posTreat, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
+                        <td style={{ ...unifiedRowStyle, left: posDesc, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
                         {days.map((day, dIdx) => (
                             <td key={dIdx} className={`${dateToIso(day) === dateToIso(new Date()) ? 'bg-blue-50/30' : (day.getDay() === 0 || day.getDay() === 6 ? 'bg-gray-100/50' : '')}`} style={{ width: effectiveDayColWidth, minWidth: effectiveDayColWidth, ...unifiedRowStyle, ...borderStyle }}>&nbsp;</td>
                         ))}

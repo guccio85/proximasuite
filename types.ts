@@ -169,6 +169,7 @@ export interface WorkOrder {
   isSubcontracted?: boolean;
   subcontractorName?: string;
   subcontractorDeliveryDate?: string; // Data consegna da ditta esterna (ISO YYYY-MM-DD)
+  missingAssignment?: boolean; // Flag: subcontractor/worker removed, order needs review
 
   // PHOTOS (v6.8.27) - Base64 Strings
   photos?: string[];

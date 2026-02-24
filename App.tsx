@@ -436,6 +436,9 @@ const App: React.FC = () => {
 
   // Unified Save/Update Handler
   const handleSaveOrder = async (order: WorkOrder) => {
+      // Clear missingAssignment flag when an order is saved (even without real changes)
+      const cleanOrder: WorkOrder = { ...order, missingAssignment: false };
+      order = cleanOrder;
       let updatedOrders;
       // Check if updating an existing order
       const existingIndex = orders.findIndex(o => o.id === order.id);
@@ -1261,23 +1264,25 @@ const App: React.FC = () => {
                                                 const updated = { ...companySettings, subcontractors: [...(companySettings?.subcontractors || []), subcontractor] };
                                                 setCompanySettings(updated);
                                                 saveData({ settings: updated });
-                                                // Ricarica le ditte partner da Supabase dopo il salvataggio
-                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
-                                                    if (settings && settings.subcontractors) {
-                                                        setCompanySettings(prev => prev ? { ...prev, subcontractors: settings.subcontractors } : prev);
-                                                    }
-                                                });
                     }}
                     onDeleteSubcontractor={(id) => {
-                                                const updated = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
-                                                setCompanySettings(updated);
-                                                saveData({ settings: updated });
-                                                // Ricarica le ditte partner da Supabase dopo la cancellazione
-                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
-                                                    if (settings && settings.subcontractors) {
-                                                        setCompanySettings(prev => prev ? { ...prev, subcontractors: settings.subcontractors } : prev);
+                                                const deletedSub = (companySettings?.subcontractors || []).find(s => s.id === id);
+                                                const updatedSettings = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
+                                                setCompanySettings(updatedSettings);
+                                                saveData({ settings: updatedSettings });
+                                                // Auto-rimuovi la ditta dagli ordini e segna come mancante
+                                                if (deletedSub) {
+                                                    const hasAffected = orders.some(o => o.subcontractorName === deletedSub.name && o.isSubcontracted);
+                                                    if (hasAffected) {
+                                                        const updatedOrders = orders.map(o =>
+                                                            o.subcontractorName === deletedSub.name && o.isSubcontracted
+                                                                ? { ...o, isSubcontracted: false, subcontractorName: undefined, subcontractorDeliveryDate: undefined, missingAssignment: true }
+                                                                : o
+                                                        );
+                                                        setOrders(updatedOrders);
+                                                        saveData({ orders: updatedOrders });
                                                     }
-                                                });
+                                                }
                     }}
                     mobilePermissions={companySettings?.mobilePermissions || {}}
                     onUpdateMobilePermissions={(p) => {
@@ -1354,7 +1359,7 @@ const App: React.FC = () => {
               lastUpdated={new Date()}
               workers={workers}
               workerPasswords={companySettings?.workerPasswords}
-              onSaveOrder={(o) => { const updated = orders.map(x => x.id === o.id ? o : x); setOrders(updated); saveData({ orders: updated }); }}
+              onSaveOrder={(o) => { const clean = { ...o, missingAssignment: false }; const updated = orders.map(x => x.id === clean.id ? clean : x); setOrders(updated); saveData({ orders: updated }); }}
               onDeleteLog={(orderId, logId) => {
                       const updated = orders.map(o => o.id === orderId ? { ...o, timeLogs: (o.timeLogs || []).filter(l => l.id !== logId) } : o);
                       setOrders(updated);
