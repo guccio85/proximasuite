@@ -93,6 +93,7 @@ const TRANSLATIONS = {
 const App: React.FC = () => {
   // --- Loading State ---
   const [isLoading, setIsLoading] = useState(true);
+  const [showWizard, setShowWizard] = useState(false);
 
   // --- Data State ---
   const [orders, setOrders] = useState<WorkOrder[]>([]);
@@ -260,14 +261,21 @@ const App: React.FC = () => {
 
   // --- REF FOR AUTO-SAVE & SYNC (Avoid Stale Closures) ---
   const stateRef = useRef({ orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors });
+  // Ref per bloccare la sincronizzazione durante un salvataggio attivo
+  const isSavingRef = useRef(false);
+  const showWizardRef = useRef(false);
 
   // Update ref whenever state changes
   useEffect(() => {
       stateRef.current = { orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors };
   }, [orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors]);
 
+  useEffect(() => { showWizardRef.current = showWizard; }, [showWizard]);
+
   // --- AUTO-SYNC Function (Supabase) ---
   const syncDataIncremental = async () => {
+    // Non sovrascrivere dati durante un salvataggio attivo o durante il wizard
+    if (isSavingRef.current || showWizardRef.current) return;
     try {
       setIsSyncing(true);
       const serverData = await SupabaseAPI.fetchAllData();
@@ -352,10 +360,17 @@ const App: React.FC = () => {
   }, []);
 
   const saveData = async (updatedData: any) => {
+      isSavingRef.current = true;
       try {
-          const currentSettings = updatedData.settings || (companySettings ? { ...companySettings, taskColors } : null);
-          
-          if (!currentSettings) return; 
+          const keys = Object.keys(updatedData);
+          const isFullSave = keys.length === 0;
+          const hasExplicitSettings = 'settings' in updatedData;
+          // Salva le settings SOLO se richiesto esplicitamente o se è un salvataggio completo
+          // Questo evita che ogni salvataggio ordini/disponibilità sovrascriva ripetutamente i dipartimenti
+          const shouldSaveSettings = isFullSave || hasExplicitSettings;
+          const currentSettings = hasExplicitSettings
+            ? updatedData.settings
+            : (isFullSave && companySettings ? { ...companySettings, taskColors } : undefined);
 
           await SupabaseAPI.saveAllData({
               orders: updatedData.orders || orders,
@@ -364,11 +379,14 @@ const App: React.FC = () => {
               availabilities: updatedData.availabilities || availabilities,
               globalDays: updatedData.globalDays || globalDays, 
               workLogs: updatedData.workLogs || workLogs,
-              settings: currentSettings
+              settings: shouldSaveSettings ? currentSettings : undefined
           });
           console.log('💾 Data saved to Supabase');
       } catch (e) {
           console.error("Error saving to Supabase", e);
+      } finally {
+          // Piccolo delay prima di riabilitare la sync per evitare race condition
+          setTimeout(() => { isSavingRef.current = false; }, 2000);
       }
   };
 
@@ -387,6 +405,7 @@ const App: React.FC = () => {
       const completeSettings = { ...settings, taskColors: initialTaskColors };
       setCompanySettings(completeSettings);
       setTaskColors(initialTaskColors);
+      setShowWizard(false); // Chiudi il wizard
       
       // Save to localStorage immediately for next reload
       localStorage.setItem('snep_settings', JSON.stringify(completeSettings));
@@ -583,7 +602,7 @@ const App: React.FC = () => {
   // Riavvia setup wizard
   const handleTriggerWizard = () => {
     localStorage.removeItem('snep_settings');
-    setCompanySettings(null);
+    setShowWizard(true);
   };
 
   // Reset totale database
@@ -1311,7 +1330,7 @@ const App: React.FC = () => {
     );
   }
 
-    if (!companySettings) {
+    if (showWizard || !companySettings) {
         return <SetupWizard onComplete={handleSetupComplete} />;
     }
 

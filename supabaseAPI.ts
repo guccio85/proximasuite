@@ -305,7 +305,8 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
         departments.push({
           id: dept.id,
           name: dept.name,
-          activities: (activitiesData || []).map((a: any) => a.activity)
+          // Deduplicazione attività per sicurezza (protezione da race conditions)
+          activities: [...new Set((activitiesData || []).map((a: any) => a.activity))]
         });
       }
     }

@@ -390,7 +390,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white relative w-full overflow-hidden" style={{ fontSize: `${baseFontSize}px` }}>
+    <div className="flex flex-col h-full bg-white relative w-full overflow-hidden" style={{ fontSize: `${baseFontSize}px`, willChange: 'transform', transform: 'translateZ(0)' }}>
       {descriptionModalOpen && editingDescriptionOrder && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
               <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
