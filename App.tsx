@@ -528,14 +528,36 @@ const App: React.FC = () => {
     saveData({ orders: remaining });
   };
 
-  // Download backup JSON
+  // Download backup JSON con dialog di salvataggio
   const handleBackup = async () => {
     const data = await SupabaseAPI.fetchAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const json = JSON.stringify(data, null, 2);
+    const fileName = `snep_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+    // Usa File System Access API se disponibile (Chrome/Edge) per scegliere dove salvare
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fileHandle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(json);
+        await writable.close();
+        return;
+      } catch (e: any) {
+        // Utente ha annullato il dialog
+        if (e.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback per browser senza File System Access API (Firefox, Safari)
+    const blob = new Blob([json], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `snep_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = fileName;
     a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   // Ripristina backup JSON

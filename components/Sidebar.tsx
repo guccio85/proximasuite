@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const VERSION = "v2.3.1";
   
   // Cloud URL for mobile access - update this with your actual cloud URL
-  const CLOUD_BASE_URL = 'https://rutbuafxlptyajbmxgyr.supabase.co'; // Replace with your deployed frontend URL
+  const CLOUD_BASE_URL = 'https://proximasuite.vercel.app'; // URL Vercel di produzione
 
   useEffect(() => {
     // Generate QR URL - always use cloud URL for internet-wide access
