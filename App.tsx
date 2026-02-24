@@ -474,15 +474,21 @@ const App: React.FC = () => {
   };
 
   const handleUpdateContacts = async (contacts: Record<string, WorkerContact>) => {
-      if (!companySettings) return;
-      const updated = { ...companySettings, workerContacts: contacts };
-      setCompanySettings(updated);
-      // Salva i contatti anche nella tabella workers
-      for (const [name, contactData] of Object.entries(contacts)) {
-        await SupabaseAPI.saveWorker(name, workerPasswords[name] || undefined, contactData);
-      }
-      await SupabaseAPI.saveCompanySettings(updated);
-      saveData({ settings: updated });
+            if (!companySettings) return;
+            const updated = { ...companySettings, workerContacts: contacts };
+            setCompanySettings(updated);
+            // Salva i contatti anche nella tabella workers
+            for (const [name, contactData] of Object.entries(contacts)) {
+                await SupabaseAPI.saveWorker(name, workerPasswords[name] || undefined, contactData);
+            }
+            await SupabaseAPI.saveCompanySettings(updated);
+            saveData({ settings: updated });
+
+            // Ricarica i dati aggiornati da Supabase per evitare desincronizzazioni
+            const workersData = await SupabaseAPI.fetchAllWorkers();
+            setWorkers(workersData.workers || []);
+            setWorkerPasswords(workersData.workerPasswords || {});
+            setCompanySettings(prev => prev ? { ...prev, workerContacts: workersData.workerContacts } : prev);
   };
 
   const handleOpenTvWindow = () => {
@@ -1138,33 +1144,63 @@ const App: React.FC = () => {
                     workers={workers}
                     departments={companySettings?.departments || []}
                     onUpdateDepartments={(d) => {
-                        const updated = { ...companySettings, departments: d };
-                        setCompanySettings(updated);
-                        saveData({ settings: updated });
+                                                const updated = { ...companySettings, departments: d };
+                                                setCompanySettings(updated);
+                                                saveData({ settings: updated });
+                                                // Ricarica i dipartimenti da Supabase dopo il salvataggio
+                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
+                                                    if (settings && settings.departments) {
+                                                        setCompanySettings(prev => prev ? { ...prev, departments: settings.departments } : prev);
+                                                    }
+                                                });
                     }}
                     subcontractors={companySettings?.subcontractors || []}
                     onAddSubcontractor={(subcontractor) => {
-                        const updated = { ...companySettings, subcontractors: [...(companySettings?.subcontractors || []), subcontractor] };
-                        setCompanySettings(updated);
-                        saveData({ settings: updated });
+                                                const updated = { ...companySettings, subcontractors: [...(companySettings?.subcontractors || []), subcontractor] };
+                                                setCompanySettings(updated);
+                                                saveData({ settings: updated });
+                                                // Ricarica le ditte partner da Supabase dopo il salvataggio
+                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
+                                                    if (settings && settings.subcontractors) {
+                                                        setCompanySettings(prev => prev ? { ...prev, subcontractors: settings.subcontractors } : prev);
+                                                    }
+                                                });
                     }}
                     onDeleteSubcontractor={(id) => {
-                        const updated = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
-                        setCompanySettings(updated);
-                        saveData({ settings: updated });
+                                                const updated = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
+                                                setCompanySettings(updated);
+                                                saveData({ settings: updated });
+                                                // Ricarica le ditte partner da Supabase dopo la cancellazione
+                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
+                                                    if (settings && settings.subcontractors) {
+                                                        setCompanySettings(prev => prev ? { ...prev, subcontractors: settings.subcontractors } : prev);
+                                                    }
+                                                });
                     }}
                     mobilePermissions={companySettings?.mobilePermissions || {}}
                     onUpdateMobilePermissions={(p) => {
-                        const updated = { ...companySettings, mobilePermissions: p };
-                        setCompanySettings(updated);
-                        saveData({ settings: updated });
+                                                const updated = { ...companySettings, mobilePermissions: p };
+                                                setCompanySettings(updated);
+                                                saveData({ settings: updated });
+                                                // Ricarica i permessi mobile da Supabase dopo il salvataggio
+                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
+                                                    if (settings && settings.mobilePermissions) {
+                                                        setCompanySettings(prev => prev ? { ...prev, mobilePermissions: settings.mobilePermissions } : prev);
+                                                    }
+                                                });
                     }}
                     companyName={companySettings?.name || ''}
                     companyLogo={companySettings?.logoUrl}
                     onUpdateCompanyDetails={(name, logo) => {
-                        const updated = { ...companySettings, name, logoUrl: logo };
-                        setCompanySettings(updated);
-                        saveData({ settings: updated });
+                                                const updated = { ...companySettings, name, logoUrl: logo };
+                                                setCompanySettings(updated);
+                                                saveData({ settings: updated });
+                                                // Ricarica i dettagli azienda da Supabase dopo il salvataggio
+                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
+                                                    if (settings && (settings.name || settings.logoUrl)) {
+                                                        setCompanySettings(prev => prev ? { ...prev, name: settings.name, logoUrl: settings.logoUrl } : prev);
+                                                    }
+                                                });
                     }}
                     adminProfiles={companySettings?.adminProfiles || []}
                     onUpdateAdminProfiles={(profiles) => {
