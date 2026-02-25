@@ -354,6 +354,81 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
   }
 };
 
+// ============================================
+// DIRECT PATCH FUNCTIONS (bypass complex pipeline)
+// ============================================
+
+export const saveAdminProfilesDirect = async (profiles: any[]): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('company_settings')
+      .update({ admin_profiles: profiles, updated_at: new Date().toISOString() })
+      .eq('id', 'default');
+    if (error) {
+      // Fallback: try upsert if row doesn't exist
+      const { error: upsertError } = await supabase
+        .from('company_settings')
+        .upsert({ id: 'default', company_name: '', admin_password: '1111', admin_profiles: profiles, updated_at: new Date().toISOString() });
+      if (upsertError) throw upsertError;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving admin profiles:', error);
+    return false;
+  }
+};
+
+export const saveMobilePermissionsDirect = async (permissions: any, logoUrl?: string): Promise<boolean> => {
+  try {
+    const permsWithLogo = { ...(permissions || {}), __logoUrl: logoUrl || null };
+    const { error } = await supabase
+      .from('company_settings')
+      .update({ mobile_permissions: permsWithLogo, updated_at: new Date().toISOString() })
+      .eq('id', 'default');
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error saving mobile permissions:', error);
+    return false;
+  }
+};
+
+export const saveSubcontractorsDirect = async (subcontractors: any[]): Promise<boolean> => {
+  try {
+    const currentIds = subcontractors.map(s => s.id);
+    if (currentIds.length > 0) {
+      await supabase.from('subcontractors').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+    } else {
+      await supabase.from('subcontractors').delete().neq('id', '');
+    }
+    for (const sub of subcontractors) {
+      await supabase.from('subcontractors').upsert({
+        id: sub.id, name: sub.name, email: sub.email || null,
+        phone: sub.phone || null, address: sub.address || null, contact_person: sub.contactPerson || null
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving subcontractors:', error);
+    return false;
+  }
+};
+
+export const saveCompanyDetailsDirect = async (name: string, logoUrl?: string | null, existingPermissions?: any): Promise<boolean> => {
+  try {
+    const permsWithLogo = { ...(existingPermissions || {}), __logoUrl: logoUrl || null };
+    const { error } = await supabase
+      .from('company_settings')
+      .update({ company_name: name, mobile_permissions: permsWithLogo, updated_at: new Date().toISOString() })
+      .eq('id', 'default');
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error saving company details:', error);
+    return false;
+  }
+};
+
 export const saveCompanySettings = async (settings: CompanySettings): Promise<boolean> => {
   try {
     // Merge logoUrl into mobile_permissions JSONB (logo_url column not yet in schema)

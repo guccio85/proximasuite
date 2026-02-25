@@ -1269,15 +1269,15 @@ const App: React.FC = () => {
                     }}
                     subcontractors={companySettings?.subcontractors || []}
                     onAddSubcontractor={(subcontractor) => {
-                                                const updated = { ...companySettings, subcontractors: [...(companySettings?.subcontractors || []), subcontractor] };
-                                                setCompanySettings(updated);
-                                                saveData({ settings: updated });
+                                                const newList = [...(companySettings?.subcontractors || []), subcontractor];
+                                                setCompanySettings(prev => ({ ...prev, subcontractors: newList }));
+                                                SupabaseAPI.saveSubcontractorsDirect(newList);
                     }}
                     onDeleteSubcontractor={(id) => {
                                                 const deletedSub = (companySettings?.subcontractors || []).find(s => s.id === id);
-                                                const updatedSettings = { ...companySettings, subcontractors: (companySettings?.subcontractors || []).filter(s => s.id !== id) };
-                                                setCompanySettings(updatedSettings);
-                                                saveData({ settings: updatedSettings });
+                                                const newList = (companySettings?.subcontractors || []).filter(s => s.id !== id);
+                                                setCompanySettings(prev => ({ ...prev, subcontractors: newList }));
+                                                SupabaseAPI.saveSubcontractorsDirect(newList);
                                                 // Auto-rimuovi la ditta dagli ordini e segna come mancante
                                                 if (deletedSub) {
                                                     const hasAffected = orders.some(o => o.subcontractorName === deletedSub.name && o.isSubcontracted);
@@ -1296,20 +1296,23 @@ const App: React.FC = () => {
                     onUpdateMobilePermissions={(p) => {
                                                 const updated = { ...companySettings, mobilePermissions: p };
                                                 setCompanySettings(updated);
-                                                saveData({ settings: updated });
+                                                // Salvataggio diretto — non passa per la pipeline complessa
+                                                SupabaseAPI.saveMobilePermissionsDirect(p, companySettings?.logoUrl);
                     }}
                     companyName={companySettings?.name || ''}
                     companyLogo={companySettings?.logoUrl}
                     onUpdateCompanyDetails={(name, logo) => {
                                                 const updated = { ...companySettings, name, logoUrl: logo };
                                                 setCompanySettings(updated);
-                                                saveData({ settings: updated });
+                                                // Salva nome azienda + logo direttamente
+                                                SupabaseAPI.saveCompanyDetailsDirect(name, logo, companySettings?.mobilePermissions);
                     }}
                     adminProfiles={companySettings?.adminProfiles || []}
                     onUpdateAdminProfiles={(profiles) => {
                         const updated = { ...companySettings, adminProfiles: profiles };
                         setCompanySettings(updated);
-                        saveData({ settings: updated });
+                        // Salvataggio diretto — patch solo admin_profiles
+                        SupabaseAPI.saveAdminProfilesDirect(profiles);
                     }}
                   />
               );
