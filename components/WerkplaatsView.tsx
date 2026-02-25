@@ -68,6 +68,30 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Ridimensiona e comprime un'immagine prima di salvarla come base64
+  const resizeAndCompress = (file: File, maxSize = 1200, quality = 0.78): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) { height = Math.round((height / width) * maxSize); width = maxSize; }
+          else { width = Math.round((width / height) * maxSize); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
   const t = (key: string) => {
     const dict: Record<string, Record<string, string>> = {
         nl: { title: "Werkplaats Overzicht", search_placeholder: "Zoek op nummer...", updated: "Geüpdatet:", no_results: "Geen orders gevonden.", mat: "Mat", beh: "Beh", desc: "Omschrijving", plan: "Planning", login_title: "Werkplaats", select_name: "Selecteer uw naam", enter_pass: "Wachtwoord", login: "Inloggen", logout: "Uitloggen", back: "Terug", wrong_pass: "Wachtwoord onjuist", log_hours: "Uren Registreren", date: "Datum", hours: "Uren", note: "Notitie", save_log: "Opslaan", log_history: "Uren", total_hours: "Totaal", select_category: "Afdeling", select_activity: "Activiteit", report_ready: "GEREED", report_ready_desc: "Laat een bericht achter.", confirm_ready: "Bevestig", cancel: "Annuleren", delete_confirm: "Verwijderen?", hidden: "*** (Verborgen)", photos: "Foto's", drawings: "Tekeningen", uploadPhoto: "Foto Verzenden", no_photos: "Geen foto's.", no_drawings: "Geen tekeningen.", drawings_loaded: "Tekening" },
@@ -129,19 +153,27 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       setSelectedOrderForLog(null);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !selectedOrderForLog || !onSaveOrderPhoto) return;
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-          if (ev.target?.result) {
-              const base64 = ev.target.result as string;
-              onSaveOrderPhoto(selectedOrderForLog.id, base64);
-              setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), base64] }) : null);
-          }
-      };
-      reader.readAsDataURL(file);
+      try {
+          const compressed = await resizeAndCompress(file);
+          onSaveOrderPhoto(selectedOrderForLog.id, compressed);
+          setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), compressed] }) : null);
+      } catch {
+          // Fallback: usa il file originale senza compressione
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+              if (ev.target?.result) {
+                  const base64 = ev.target.result as string;
+                  onSaveOrderPhoto(selectedOrderForLog.id, base64);
+                  setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), base64] }) : null);
+              }
+          };
+          reader.readAsDataURL(file);
+      }
+      // Reset input per permettere il caricamento della stessa foto
+      e.target.value = '';
   };
 
   const filteredOrders = useMemo(() => {

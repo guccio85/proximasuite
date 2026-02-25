@@ -124,6 +124,44 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
 
   const excelInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Ridimensiona e comprime un'immagine prima di salvarla
+  const resizeAndCompress = (file: File, maxSize = 1200, quality = 0.78): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) { height = Math.round((height / width) * maxSize); width = maxSize; }
+          else { width = Math.round((width / height) * maxSize); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('no canvas')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      setIsLoading(true);
+      try {
+          const compressed = await Promise.all(files.map(f => resizeAndCompress(f)));
+          const newPhotos = [...(formData.photos || []), ...compressed];
+          setFormData(prev => ({ ...prev, photos: newPhotos }));
+          if (editingOrder && onUpdateAttachments) onUpdateAttachments(editingOrder.id, 'photos', newPhotos);
+      } catch (err) { setError('Errore caricamento foto.'); }
+      finally { setIsLoading(false); if (photoInputRef.current) photoInputRef.current.value = ''; }
+  };
 
   const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -439,7 +477,14 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
           )}
 
           {activeTab === 'photos' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto">
+              <div className="space-y-3">
+                  <div className="flex justify-end">
+                      <input type="file" accept="image/*" multiple className="hidden" ref={photoInputRef} onChange={handlePhotoUpload} />
+                      <button type="button" onClick={() => photoInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">
+                          <Camera size={14} /> {language === 'nl' ? 'FOTO TOEVOEGEN' : language === 'it' ? 'AGGIUNGI FOTO' : 'ADD PHOTO'}
+                      </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto">
                   {formData.photos?.map((photo, index) => (
                       <div key={index} className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden shadow-sm border border-gray-200">
                           <button type="button" onClick={() => { 
@@ -453,6 +498,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
                           <img src={photo} className="w-full h-full object-cover cursor-pointer" onClick={() => setViewingPhoto(photo)} alt="Mediapart" />
                       </div>
                   ))}
+                  </div>
               </div>
           )}
 
