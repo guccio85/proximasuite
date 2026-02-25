@@ -511,7 +511,7 @@ const App: React.FC = () => {
                 await SupabaseAPI.saveWorker(name, workerPasswords[name] || undefined, contactData);
             }
             await SupabaseAPI.saveCompanySettings(updated);
-            saveData({ settings: updated });
+            settingsProtectedUntilRef.current = Date.now() + 15000;
 
             // Ricarica i dati aggiornati da Supabase per evitare desincronizzazioni
             const workersData = await SupabaseAPI.fetchAllWorkers();
@@ -1222,7 +1222,8 @@ const App: React.FC = () => {
                       companySettings={companySettings}
                       onUpdateSettings={(updated) => {
                           setCompanySettings(updated);
-                          saveData({ settings: updated });
+                          settingsProtectedUntilRef.current = Date.now() + 15000;
+                          SupabaseAPI.saveSubcontractorsDirect(updated.subcontractors || []);
                       }}
                       language={currentLang}
                       newSubName={newSubName}
@@ -1256,7 +1257,7 @@ const App: React.FC = () => {
                     sidebarTextColor="#ffffff" onSidebarTextColorChange={() => {}}
                     sidebarWidth={264} onSidebarWidthChange={() => {}}
                     layoutSpacing={layoutSpacing} onLayoutSpacingChange={setLayoutSpacing}
-                    taskColors={taskColors} onTaskColorsChange={(c) => { setTaskColors(c); saveData({ settings: { ...companySettings, taskColors: c } }); }}
+                    taskColors={taskColors} onTaskColorsChange={(c) => { setTaskColors(c); settingsProtectedUntilRef.current = Date.now() + 15000; saveData({ settings: { ...companySettings, taskColors: c } }); }}
                     language={currentLang} 
                     onLanguageChange={setCurrentLang}
                     theme={theme}
