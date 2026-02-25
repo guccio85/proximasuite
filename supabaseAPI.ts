@@ -331,16 +331,18 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
     }
 
     // Construct CompanySettings object (include ALL fetched data)
+    const rawMobilePerms = settingsData?.mobile_permissions || {};
+    const { __logoUrl, ...cleanMobilePerms } = rawMobilePerms as any;
     const settings: CompanySettings = {
       name: settingsData?.company_name || '',
-      logoUrl: settingsData?.logo_url || undefined,
+      logoUrl: __logoUrl || settingsData?.logo_url || undefined, // Support both storage methods
       primaryColor: settingsData?.primary_color || undefined,
       taskColors: taskColors, // Include fetched colors
       adminPassword: settingsData?.admin_password || '1111',
       adminProfiles: settingsData?.admin_profiles || [],
       departments: departments.length > 0 ? departments : undefined, // Include fetched departments
       subcontractors: subcontractors.length > 0 ? subcontractors : undefined, // Include fetched subcontractors
-      mobilePermissions: settingsData?.mobile_permissions || undefined,
+      mobilePermissions: Object.keys(cleanMobilePerms).length > 0 ? cleanMobilePerms : undefined,
       workerPasswords: {}, // Loaded separately from workers table
       workerContacts: {}, // Merged in fetchAllData
       security: undefined
@@ -354,6 +356,12 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
 
 export const saveCompanySettings = async (settings: CompanySettings): Promise<boolean> => {
   try {
+    // Merge logoUrl into mobile_permissions JSONB (logo_url column not yet in schema)
+    const mobilePermsWithLogo = {
+      ...(settings.mobilePermissions || {}),
+      __logoUrl: settings.logoUrl || null
+    };
+
     // Save basic settings
     const { error: settingsError } = await supabase
       .from('company_settings')
@@ -362,8 +370,7 @@ export const saveCompanySettings = async (settings: CompanySettings): Promise<bo
         company_name: settings.name,
         admin_password: settings.adminPassword,
         admin_profiles: settings.adminProfiles || [],
-        mobile_permissions: settings.mobilePermissions,
-        logo_url: settings.logoUrl || null,
+        mobile_permissions: mobilePermsWithLogo,
         updated_at: new Date().toISOString()
       });
 
@@ -419,9 +426,17 @@ export const saveCompanySettings = async (settings: CompanySettings): Promise<bo
       }
     }
 
-    // Save subcontractors
-    if (settings.subcontractors) {
-      for (const sub of settings.subcontractors) {
+    // Save subcontractors: delete removed ones first, then upsert remaining
+    if (settings.subcontractors !== undefined) {
+      const currentIds = (settings.subcontractors || []).map(s => s.id);
+      // Delete subcontractors that are no longer in the list
+      if (currentIds.length > 0) {
+        await supabase.from('subcontractors').delete().not('id', 'in', `(${currentIds.map(id => `"${id}"`).join(',')})`);
+      } else {
+        // List is empty — delete all
+        await supabase.from('subcontractors').delete().neq('id', '');
+      }
+      for (const sub of settings.subcontractors || []) {
         await supabase
           .from('subcontractors')
           .upsert({

@@ -385,8 +385,8 @@ const App: React.FC = () => {
       } catch (e) {
           console.error("Error saving to Supabase", e);
       } finally {
-          // Piccolo delay prima di riabilitare la sync per evitare race condition
-          setTimeout(() => { isSavingRef.current = false; }, 2000);
+          // Delay maggiore per evitare race condition con sync Supabase lento
+          setTimeout(() => { isSavingRef.current = false; }, 5000);
       }
   };
 

@@ -34,9 +34,11 @@ CREATE TABLE IF NOT EXISTS company_settings (
   company_name TEXT NOT NULL,
   admin_password TEXT NOT NULL,
   admin_profiles JSONB, -- [{id, name, password, role, permissions}]
-  mobile_permissions JSONB, -- {showClientName, allowPhotoUpload, allowDrawingsView}
+  mobile_permissions JSONB, -- {showClientName, allowPhotoUpload, allowDrawingsView, __logoUrl}
   updated_at TIMESTAMP DEFAULT NOW()
 );
+-- NOTE: logo_url is stored inside mobile_permissions JSONB as __logoUrl key
+-- To add a dedicated column run: ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS logo_url TEXT;
 
 -- Table: task_colors
 CREATE TABLE IF NOT EXISTS task_colors (
