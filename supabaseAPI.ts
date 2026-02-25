@@ -414,6 +414,39 @@ export const saveSubcontractorsDirect = async (subcontractors: any[]): Promise<b
   }
 };
 
+export const saveDepartmentsDirect = async (departments: any[]): Promise<boolean> => {
+  try {
+    const currentIds = departments.map(d => d.id);
+    // Elimina i reparti rimossi
+    if (currentIds.length > 0) {
+      const { data: existing } = await supabase.from('departments').select('id');
+      const toDelete = (existing || []).map((r: any) => r.id).filter((id: string) => !currentIds.includes(id));
+      for (const id of toDelete) {
+        await supabase.from('department_activities').delete().eq('department_id', id);
+        await supabase.from('departments').delete().eq('id', id);
+      }
+    } else {
+      await supabase.from('department_activities').delete().neq('department_id', '');
+      await supabase.from('departments').delete().neq('id', '');
+    }
+    // Upsert reparti rimasti + attività
+    for (let i = 0; i < departments.length; i++) {
+      const dept = departments[i];
+      await supabase.from('departments').upsert({ id: dept.id, name: dept.name, sort_order: i });
+      await supabase.from('department_activities').delete().eq('department_id', dept.id);
+      if (dept.activities && dept.activities.length > 0) {
+        for (let j = 0; j < dept.activities.length; j++) {
+          await supabase.from('department_activities').insert({ department_id: dept.id, activity: dept.activities[j], sort_order: j });
+        }
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving departments:', error);
+    return false;
+  }
+};
+
 export const saveCompanyDetailsDirect = async (name: string, logoUrl?: string | null, existingPermissions?: any): Promise<boolean> => {
   try {
     const permsWithLogo = { ...(existingPermissions || {}), __logoUrl: logoUrl || null };

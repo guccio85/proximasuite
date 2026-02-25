@@ -1264,15 +1264,9 @@ const App: React.FC = () => {
                     workers={workers}
                     departments={companySettings?.departments || []}
                     onUpdateDepartments={(d) => {
-                                                const updated = { ...companySettings, departments: d };
-                                                setCompanySettings(updated);
-                                                saveData({ settings: updated });
-                                                // Ricarica i dipartimenti da Supabase dopo il salvataggio
-                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
-                                                    if (settings && settings.departments) {
-                                                        setCompanySettings(prev => prev ? { ...prev, departments: settings.departments } : prev);
-                                                    }
-                                                });
+                                                setCompanySettings(prev => ({ ...prev, departments: d }));
+                                                settingsProtectedUntilRef.current = Date.now() + 15000;
+                                                SupabaseAPI.saveDepartmentsDirect(d);
                     }}
                     subcontractors={companySettings?.subcontractors || []}
                     onAddSubcontractor={(subcontractor) => {
