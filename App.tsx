@@ -264,6 +264,8 @@ const App: React.FC = () => {
   // Ref per bloccare la sincronizzazione durante un salvataggio attivo
   const isSavingRef = useRef(false);
   const showWizardRef = useRef(false);
+  // Blocca la sync di company_settings per 15s dopo ogni salvataggio manuale
+  const settingsProtectedUntilRef = useRef(0);
 
   // Update ref whenever state changes
   useEffect(() => {
@@ -310,12 +312,17 @@ const App: React.FC = () => {
       }
       // Merge workerContacts (già inclusi in serverData.settings da fetchAllData)
       if (serverData.settings) {
-        const serverSettingsStr = JSON.stringify(serverData.settings);
-        const currentSettingsStr = JSON.stringify(current.companySettings);
-        if (serverSettingsStr !== currentSettingsStr) {
-          setCompanySettings(serverData.settings);
-          if (serverData.settings.taskColors) setTaskColors(serverData.settings.taskColors);
-          console.log('🔄 Impostazioni aggiornate da Supabase');
+        // Non sovrascrivere le impostazioni se l'utente ha appena salvato (finestra di 15s)
+        if (Date.now() >= settingsProtectedUntilRef.current) {
+          const serverSettingsStr = JSON.stringify(serverData.settings);
+          const currentSettingsStr = JSON.stringify(current.companySettings);
+          if (serverSettingsStr !== currentSettingsStr) {
+            setCompanySettings(serverData.settings);
+            if (serverData.settings.taskColors) setTaskColors(serverData.settings.taskColors);
+            console.log('🔄 Impostazioni aggiornate da Supabase');
+          }
+        } else {
+          console.log('🛡️ Settings sync skipped — protezione post-salvataggio attiva');
         }
       }
     } catch (e) {
@@ -1271,12 +1278,14 @@ const App: React.FC = () => {
                     onAddSubcontractor={(subcontractor) => {
                                                 const newList = [...(companySettings?.subcontractors || []), subcontractor];
                                                 setCompanySettings(prev => ({ ...prev, subcontractors: newList }));
+                                                settingsProtectedUntilRef.current = Date.now() + 15000;
                                                 SupabaseAPI.saveSubcontractorsDirect(newList);
                     }}
                     onDeleteSubcontractor={(id) => {
                                                 const deletedSub = (companySettings?.subcontractors || []).find(s => s.id === id);
                                                 const newList = (companySettings?.subcontractors || []).filter(s => s.id !== id);
                                                 setCompanySettings(prev => ({ ...prev, subcontractors: newList }));
+                                                settingsProtectedUntilRef.current = Date.now() + 15000;
                                                 SupabaseAPI.saveSubcontractorsDirect(newList);
                                                 // Auto-rimuovi la ditta dagli ordini e segna come mancante
                                                 if (deletedSub) {
@@ -1296,7 +1305,7 @@ const App: React.FC = () => {
                     onUpdateMobilePermissions={(p) => {
                                                 const updated = { ...companySettings, mobilePermissions: p };
                                                 setCompanySettings(updated);
-                                                // Salvataggio diretto — non passa per la pipeline complessa
+                                                settingsProtectedUntilRef.current = Date.now() + 15000;
                                                 SupabaseAPI.saveMobilePermissionsDirect(p, companySettings?.logoUrl);
                     }}
                     companyName={companySettings?.name || ''}
@@ -1304,14 +1313,14 @@ const App: React.FC = () => {
                     onUpdateCompanyDetails={(name, logo) => {
                                                 const updated = { ...companySettings, name, logoUrl: logo };
                                                 setCompanySettings(updated);
-                                                // Salva nome azienda + logo direttamente
+                                                settingsProtectedUntilRef.current = Date.now() + 15000;
                                                 SupabaseAPI.saveCompanyDetailsDirect(name, logo, companySettings?.mobilePermissions);
                     }}
                     adminProfiles={companySettings?.adminProfiles || []}
                     onUpdateAdminProfiles={(profiles) => {
                         const updated = { ...companySettings, adminProfiles: profiles };
                         setCompanySettings(updated);
-                        // Salvataggio diretto — patch solo admin_profiles
+                        settingsProtectedUntilRef.current = Date.now() + 15000;
                         SupabaseAPI.saveAdminProfilesDirect(profiles);
                     }}
                   />
