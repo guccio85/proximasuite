@@ -289,11 +289,9 @@ const App: React.FC = () => {
       const serverWorkLogs = serverData.workLogs || [];
       const serverWorkerPasswords = serverData.workerPasswords || {};
 
-      if (JSON.stringify(serverOrders) !== JSON.stringify(current.orders)) {
-        setOrders(serverOrders);
-        setLastSyncTime(Date.now());
-        console.log('🔄 Ordini aggiornati da Supabase');
-      }
+      // Ordini: sempre aggiorna dal server — JSON.stringify è inaffidabile su oggetti complessi con chiavi in ordine diverso
+      setOrders(serverOrders);
+      setLastSyncTime(Date.now());
       if (JSON.stringify(serverWorkers) !== JSON.stringify(current.workers)) {
         setWorkers(serverWorkers);
         console.log('🔄 Dipendenti aggiornati da Supabase');

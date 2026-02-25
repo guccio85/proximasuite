@@ -37,7 +37,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   }, [selectedTheme]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>('ACTIVE');
   
   const [loggedInWorker, setLoggedInWorker] = useState<string | null>(() => {
     // PWA: Check for existing session (24-hour validity)
