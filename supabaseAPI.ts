@@ -363,6 +363,7 @@ export const saveCompanySettings = async (settings: CompanySettings): Promise<bo
         admin_password: settings.adminPassword,
         admin_profiles: settings.adminProfiles || [],
         mobile_permissions: settings.mobilePermissions,
+        logo_url: settings.logoUrl || null,
         updated_at: new Date().toISOString()
       });
 

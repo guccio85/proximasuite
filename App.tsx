@@ -1112,6 +1112,13 @@ const App: React.FC = () => {
               const completedOrders = sortedOrders.filter(o => o.status === OrderStatus.COMPLETED);
               const effectiveRowHeight = Math.round(FIXED_ROW_HEIGHT * rowHeightMultiplier);
               const effectiveCardFontSize = Math.round(FIXED_CARD_FONT * cardFontSizeMultiplier);
+              const handleDeleteArchivedOrder = async (orderId: string) => {
+                  if (!confirm('Eliminare questo ordine definitivamente?')) return;
+                  const updatedOrders = orders.filter(o => o.id !== orderId);
+                  setOrders(updatedOrders);
+                  await SupabaseAPI.deleteOrder(orderId);
+                  saveData({ orders: updatedOrders });
+              };
               return (
                   <div className="absolute inset-0 w-full h-full p-2">
                       <div className={`w-full h-full ${theme === 'gold' ? 'bg-[#111]' : 'bg-[#0f172a]'} backdrop-blur-xl rounded-[1.5rem] overflow-hidden border ${theme === 'gold' ? 'border-[#d4af37]/30 shadow-[0_8px_30px_rgba(0,0,0,0.5)]' : 'border-[#00f2fe]/30 shadow-[0_8px_30px_rgba(0,0,0,0.6)]'}`}>
@@ -1122,6 +1129,7 @@ const App: React.FC = () => {
                               onDateClick={() => {}}
                               onOrderClick={handleEditOrderClick}
                               onInlineUpdate={handleInlineUpdate}
+                              onDeleteOrder={handleDeleteArchivedOrder}
                               viewMode="list"
                               baseFontSize={tableFontSize}
                               layoutSpacing={layoutSpacing}
@@ -1289,12 +1297,6 @@ const App: React.FC = () => {
                                                 const updated = { ...companySettings, mobilePermissions: p };
                                                 setCompanySettings(updated);
                                                 saveData({ settings: updated });
-                                                // Ricarica i permessi mobile da Supabase dopo il salvataggio
-                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
-                                                    if (settings && settings.mobilePermissions) {
-                                                        setCompanySettings(prev => prev ? { ...prev, mobilePermissions: settings.mobilePermissions } : prev);
-                                                    }
-                                                });
                     }}
                     companyName={companySettings?.name || ''}
                     companyLogo={companySettings?.logoUrl}
@@ -1302,12 +1304,6 @@ const App: React.FC = () => {
                                                 const updated = { ...companySettings, name, logoUrl: logo };
                                                 setCompanySettings(updated);
                                                 saveData({ settings: updated });
-                                                // Ricarica i dettagli azienda da Supabase dopo il salvataggio
-                                                SupabaseAPI.fetchCompanySettings().then((settings) => {
-                                                    if (settings && (settings.name || settings.logoUrl)) {
-                                                        setCompanySettings(prev => prev ? { ...prev, name: settings.name, logoUrl: settings.logoUrl } : prev);
-                                                    }
-                                                });
                     }}
                     adminProfiles={companySettings?.adminProfiles || []}
                     onUpdateAdminProfiles={(profiles) => {

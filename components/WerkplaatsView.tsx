@@ -39,7 +39,15 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   
-  const [loggedInWorker, setLoggedInWorker] = useState<string | null>(null);
+  const [loggedInWorker, setLoggedInWorker] = useState<string | null>(() => {
+    // PWA: Check for existing session (24-hour validity)
+    try {
+      const saved = localStorage.getItem('snep_werkplaats_worker');
+      const ts = localStorage.getItem('snep_werkplaats_ts');
+      if (saved && ts && (Date.now() - parseInt(ts, 10)) < 86400000) return saved;
+    } catch {}
+    return null;
+  });
   const [loginStep, setLoginStep] = useState<'select' | 'password'>('select');
   const [selectedLoginWorker, setSelectedLoginWorker] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState('');
@@ -78,10 +86,15 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       const storedPass = workerPasswords[selectedLoginWorker];
       if (storedPass && passwordInput !== storedPass) { setLoginError(t('wrong_pass')); return; }
       setLoggedInWorker(selectedLoginWorker);
+      try {
+          localStorage.setItem('snep_werkplaats_worker', selectedLoginWorker);
+          localStorage.setItem('snep_werkplaats_ts', Date.now().toString());
+      } catch {}
   };
 
   const handleLogout = () => {
       setLoggedInWorker(null); setLoginStep('select'); setSelectedOrderForLog(null); resetLogForm();
+      try { localStorage.removeItem('snep_werkplaats_worker'); localStorage.removeItem('snep_werkplaats_ts'); } catch {}
   };
 
   const resetLogForm = () => {

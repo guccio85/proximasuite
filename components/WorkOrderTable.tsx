@@ -445,7 +445,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
              </div>
          )}
 
-         <div className="absolute inset-0 w-full h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
+         <div className="absolute inset-0 w-full h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100" style={{ isolation: 'isolate' }}>
             <table 
                 className="snep-table h-full" 
                 style={{ 
@@ -795,7 +795,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                         <td style={{ ...unifiedRowStyle, left: posTreat, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
                         <td style={{ ...unifiedRowStyle, left: posDesc, ...borderStyle, willChange: 'transform' }} className="sticky z-30 bg-white">&nbsp;</td>
                         {days.map((day, dIdx) => (
-                            <td key={dIdx} className={`${dateToIso(day) === dateToIso(new Date()) ? 'bg-blue-50/30' : (day.getDay() === 0 || day.getDay() === 6 ? 'bg-gray-100/50' : '')}`} style={{ width: effectiveDayColWidth, minWidth: effectiveDayColWidth, ...unifiedRowStyle, ...borderStyle }}>&nbsp;</td>
+                            <td key={dIdx} className={`${dateToIso(day) === dateToIso(new Date()) ? 'bg-blue-50/30' : (day.getDay() === 0 || day.getDay() === 6 ? 'bg-gray-100/50' : '')}`} style={{ width: effectiveDayColWidth, minWidth: effectiveDayColWidth, ...unifiedRowStyle, ...borderStyle, willChange: 'transform' }}>&nbsp;</td>
                         ))}
                     </tr>
                 ))}
