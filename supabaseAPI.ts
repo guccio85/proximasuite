@@ -380,7 +380,13 @@ export const saveAdminProfilesDirect = async (profiles: any[]): Promise<boolean>
 
 export const saveMobilePermissionsDirect = async (permissions: any, logoUrl?: string): Promise<boolean> => {
   try {
-    const permsWithLogo = { ...(permissions || {}), __logoUrl: logoUrl || null };
+    // Se logoUrl non viene passato, leggi il valore esistente dal DB per non sovrascriverlo con null
+    let resolvedLogoUrl = logoUrl;
+    if (resolvedLogoUrl === undefined) {
+      const { data } = await supabase.from('company_settings').select('mobile_permissions').eq('id', 'default').single();
+      resolvedLogoUrl = (data?.mobile_permissions as any)?.__logoUrl || undefined;
+    }
+    const permsWithLogo = { ...(permissions || {}), __logoUrl: resolvedLogoUrl || null };
     const { error } = await supabase
       .from('company_settings')
       .update({ mobile_permissions: permsWithLogo, updated_at: new Date().toISOString() })
