@@ -420,13 +420,17 @@ const App: React.FC = () => {
   };
 
   const handleInlineUpdate = async (id: string, field: string, value: any) => {
+      isSavingRef.current = true; // Blocca sync PRIMA dell'await
       const updatedOrders = orders.map(o => o.id === id ? { ...o, [field]: value } : o);
       setOrders(updatedOrders);
       const orderToUpdate = updatedOrders.find(o => o.id === id);
-      if (orderToUpdate) {
-          await SupabaseAPI.saveOrder(orderToUpdate);
+      try {
+          if (orderToUpdate) {
+              await SupabaseAPI.saveOrder(orderToUpdate);
+          }
+      } finally {
+          setTimeout(() => { isSavingRef.current = false; }, 5000);
       }
-      saveData({ orders: updatedOrders });
   };
 
   const handleAddOrderClick = () => {
@@ -441,6 +445,7 @@ const App: React.FC = () => {
 
   // Unified Save/Update Handler
   const handleSaveOrder = async (order: WorkOrder) => {
+      isSavingRef.current = true; // Blocca sync PRIMA dell'await
       // Clear missingAssignment flag when an order is saved (even without real changes)
       const cleanOrder: WorkOrder = { ...order, missingAssignment: false };
       order = cleanOrder;
@@ -458,8 +463,11 @@ const App: React.FC = () => {
       }
       
       setOrders(updatedOrders);
-      await SupabaseAPI.saveOrder(order);
-      saveData({ orders: updatedOrders });
+      try {
+          await SupabaseAPI.saveOrder(order);
+      } finally {
+          setTimeout(() => { isSavingRef.current = false; }, 5000);
+      }
       setIsAddOrderModalOpen(false);
       setSelectedOrderForEdit(null);
   };
@@ -1350,11 +1358,19 @@ const App: React.FC = () => {
               lastUpdated={new Date()}
               workers={workers}
               workerPasswords={companySettings?.workerPasswords}
-              onSaveOrder={(o) => { const clean = { ...o, missingAssignment: false }; const updated = orders.map(x => x.id === clean.id ? clean : x); setOrders(updated); saveData({ orders: updated }); }}
-              onDeleteLog={(orderId, logId) => {
+              onSaveOrder={async (o) => { 
+                  isSavingRef.current = true;
+                  const clean = { ...o, missingAssignment: false }; 
+                  const updated = orders.map(x => x.id === clean.id ? clean : x); 
+                  setOrders(updated); 
+                  try { await SupabaseAPI.saveOrder(clean); } finally { setTimeout(() => { isSavingRef.current = false; }, 5000); }
+              }}
+              onDeleteLog={async (orderId, logId) => {
+                      isSavingRef.current = true;
                       const updated = orders.map(o => o.id === orderId ? { ...o, timeLogs: (o.timeLogs || []).filter(l => l.id !== logId) } : o);
                       setOrders(updated);
-                      saveData({ orders: updated });
+                      const orderToSave = updated.find(o => o.id === orderId);
+                      try { if (orderToSave) await SupabaseAPI.saveOrder(orderToSave); } finally { setTimeout(() => { isSavingRef.current = false; }, 5000); }
               }}
               onSaveOrderPhoto={handleSaveOrderPhoto}
               language={currentLang}
