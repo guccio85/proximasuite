@@ -1324,8 +1324,9 @@ const App: React.FC = () => {
   };
 
   // --- INITIAL LOADING ---
-  // Only show loader if we don't have settings yet (and no local storage fallback found)
-  if (isLoading && !companySettings) {
+  // Mostra sempre lo spinner finché i dati freschi da Supabase non sono pronti
+  // (evita il flash di dati vecchi/vuoti durante il caricamento iniziale)
+  if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
@@ -1342,17 +1343,6 @@ const App: React.FC = () => {
 
   // Workshop/werkplaats view (accessible from QR code)
   if (urlView === 'werkplaats') {
-      // Wait for data to load before showing workshop interface
-      if (isLoading) {
-          return (
-              <div className="flex h-screen w-screen items-center justify-center bg-gray-100">
-                  <div className="flex flex-col items-center gap-4">
-                      <Loader2 className="animate-spin text-blue-600" size={48} />
-                      <p className="text-gray-500 font-medium text-lg">Caricamento dati...</p>
-                  </div>
-              </div>
-          );
-      }
       console.log('✅ Rendering WerkplaatsView');
       return (
           <WerkplaatsView
