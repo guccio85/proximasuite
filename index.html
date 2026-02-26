@@ -18,6 +18,22 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <!-- Cache bust: v20260226 -->
+    <script>
+      // Auto-reload se esiste una versione piu nuova sul server
+      // Funziona anche se questo file e in cache - version.json viene sempre scaricato fresco
+      fetch('/version.json?_=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var stored = localStorage.getItem('snep_deployed_version');
+          if (stored && stored !== data.version) {
+            localStorage.setItem('snep_deployed_version', data.version);
+            window.location.reload(true);
+          } else {
+            localStorage.setItem('snep_deployed_version', data.version);
+          }
+        })
+        .catch(function() {});
+    </script>
 
     <title>Planner Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
