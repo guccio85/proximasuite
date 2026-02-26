@@ -441,7 +441,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                             </div>
                         )}
 
-                        {/* HISTORY */}}
+                        {/* HISTORY */}
                         {order.timeLogs && order.timeLogs.length > 0 && (
                             <div className={`${selectedTheme === 'light' ? 'bg-blue-50 border-blue-200' : 'bg-[#141414]/80 border-[#d4af37]/20'} backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'space' ? 'border-[#00f2fe]/20' : ''} overflow-hidden`}>
                                 <div className={`p-4 ${selectedTheme === 'light' ? 'bg-blue-100 border-blue-300' : 'bg-[#0a0a0a]/80 border-gray-800'} border-b flex justify-between items-center`}>
