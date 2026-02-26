@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Upload, FileSpreadsheet, Camera, Loader2, Check, Maximize2, Minimize2, PaintBucket, CalendarClock, Ruler, ClipboardList, Anvil, Layers, Wrench, MapPin, Info, Edit3, Clock, User, BarChart2, PieChart, Coins, Briefcase, Image as ImageIcon, Trash2, FileText, Eye, Plus } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, Camera, Loader2, Check, Maximize2, Minimize2, PaintBucket, CalendarClock, Ruler, ClipboardList, Anvil, Layers, Wrench, MapPin, Info, Edit3, Clock, User, BarChart2, PieChart, Coins, Briefcase, Image as ImageIcon, Trash2, FileText, Eye, Plus, Box } from 'lucide-react';
 import { WorkOrder, OrderStatus, Language, ExtractedOrderData, Subcontractor } from '../types';
 import { parseExcelWorkOrder } from '../services/excelService';
 
@@ -9,6 +9,7 @@ interface AddOrderModalProps {
   onClose: () => void;
   onSave: (order: WorkOrder) => void;
   onUpdateAttachments?: (orderId: string, type: 'photos' | 'drawings', files: string[]) => void;
+  onUpdateGlbModel?: (orderId: string, glbUrl: string | null) => void;
   workers?: string[];
   subcontractors?: Subcontractor[];
   editingOrder?: WorkOrder | null;
@@ -16,8 +17,8 @@ interface AddOrderModalProps {
   baseFontSize?: number;
 }
 
-export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, onSave, onUpdateAttachments, workers = [], subcontractors = [], editingOrder, language = 'nl', baseFontSize = 14 }) => {
-  const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'hours' | 'photos' | 'drawings'>('manual');
+export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, onSave, onUpdateAttachments, onUpdateGlbModel, workers = [], subcontractors = [], editingOrder, language = 'nl', baseFontSize = 14 }) => {
+  const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'hours' | 'photos' | 'drawings' | 'models'>('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -27,13 +28,13 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
   const t = (key: string) => {
     const dict: Record<string, Record<string, string>> = {
         nl: {
-            new_order: "Nieuwe Order", edit_order: "Order Bewerken", manual: "HANDMATIG", import: "IMPORT EXCEL", hours_logs: "UREN (LOGS)", media: "MEDIA (FOTO'S)", drawings: "TEKENINGEN", processing: "Gegevens verwerken...", wait: "Even geduld a.u.b.", error_req: "Ordernummer en Opdrachtgever zijn verplicht.", cancel: "Annuleren", save: "Opslaan", save_changes: "Order Bijwerken", excel_title: "Excel Import", excel_sub: "Upload .xlsx of .xls bestanden om data automatisch in te vullen.", choose_file: "Excel Bestand Kiezen", log_date: "Datum", log_worker: "Werknemer", log_cat: "Cat / Activiteit", log_hours: "Uren", log_note: "Notitie", log_total: "Totaal Geregistreerd", no_logs: "Nog geen uren geregistreerd voor deze order.", no_photos: "Geen foto's beschikbaar voor deze order.", delete_photo: "Verwijder Foto", no_drawings: "Geen technische tekeningen beschikbaar.", add_drawing: "BESTAND TOEVOEGEN (PDF/JPG/PNG)", delete_drawing: "Verwijder Bestand", budget_vs_real: "Budget vs Realisatie", worker_summary: "Overzicht per Werknemer", planned: "Begroot", realized: "Gerealiseerd", manual_budget: "Budget Uren (Handmatig)", order_num: "Order Nummer", client: "Opdrachtgever", status: "Status", project: "Project / Werk", address: "Adres", material: "Materiaal", treatment: "CONSERVERING (BEHANDELING)", planning: "Planning & Uitvoering", main_date: "HOOFDDATUM (KALENDER)", del_date: "LEVERDATUM", measure: "Inmeten", start: "START", end: "EIND", executor: "UITVOERDER(S)", team: "PLOEG", desc: "Beschrijving / Notities", select: "Selecteer...", calc_days: "Auto-berekening: Duur (excl. weekend) op basis van budget", staal: "Staal", rvs: "RVS", alu: "Aluminium", andere: "Andere", is_subcontracted: "Partnerbedrijf / Onderaannemer", select_sub: "Partner selecteren", sub_msg: "Order is uitbesteed."
+            new_order: "Nieuwe Order", edit_order: "Order Bewerken", manual: "HANDMATIG", import: "IMPORT EXCEL", hours_logs: "UREN (LOGS)", media: "MEDIA (FOTO'S)", drawings: "TEKENINGEN", models_tab: "3D MODEL", add_model: "MODEL TOEVOEGEN (.GLB)", no_model: "Geen 3D model beschikbaar.", model_uploaded: "Model geüpload", delete_model: "Model Verwijderen", processing: "Gegevens verwerken...", wait: "Even geduld a.u.b.", error_req: "Ordernummer en Opdrachtgever zijn verplicht.", cancel: "Annuleren", save: "Opslaan", save_changes: "Order Bijwerken", excel_title: "Excel Import", excel_sub: "Upload .xlsx of .xls bestanden om data automatisch in te vullen.", choose_file: "Excel Bestand Kiezen", log_date: "Datum", log_worker: "Werknemer", log_cat: "Cat / Activiteit", log_hours: "Uren", log_note: "Notitie", log_total: "Totaal Geregistreerd", no_logs: "Nog geen uren geregistreerd voor deze order.", no_photos: "Geen foto's beschikbaar voor deze order.", delete_photo: "Verwijder Foto", no_drawings: "Geen technische tekeningen beschikbaar.", add_drawing: "BESTAND TOEVOEGEN (PDF/JPG/PNG)", delete_drawing: "Verwijder Bestand", budget_vs_real: "Budget vs Realisatie", worker_summary: "Overzicht per Werknemer", planned: "Begroot", realized: "Gerealiseerd", manual_budget: "Budget Uren (Handmatig)", order_num: "Order Nummer", client: "Opdrachtgever", status: "Status", project: "Project / Werk", address: "Adres", material: "Materiaal", treatment: "CONSERVERING (BEHANDELING)", planning: "Planning & Uitvoering", main_date: "HOOFDDATUM (KALENDER)", del_date: "LEVERDATUM", measure: "Inmeten", start: "START", end: "EIND", executor: "UITVOERDER(S)", team: "PLOEG", desc: "Beschrijving / Notities", select: "Selecteer...", calc_days: "Auto-berekening: Duur (excl. weekend) op basis van budget", staal: "Staal", rvs: "RVS", alu: "Aluminium", andere: "Andere", is_subcontracted: "Partnerbedrijf / Onderaannemer", select_sub: "Partner selecteren", sub_msg: "Order is uitbesteed."
         },
         en: {
-            new_order: "New Order", edit_order: "Edit Order", manual: "MANUAL", import: "IMPORT EXCEL", hours_logs: "HOURS (LOGS)", media: "MEDIA (PHOTOS)", drawings: "DRAWINGS", processing: "Processing...", wait: "Wait.", error_req: "Required fields missing.", cancel: "Cancel", save: "Save", save_changes: "Update", excel_title: "Excel Import", excel_sub: "Upload .xlsx or .xls to auto-fill fields.", choose_file: "Choose Excel File", log_date: "Date", log_worker: "Worker", log_cat: "Activity", log_hours: "Hours", log_note: "Note", log_total: "Total", no_logs: "No logs.", no_photos: "No photos.", delete_photo: "Delete Photo", no_drawings: "No drawings.", add_drawing: "ADD FILE (PDF/JPG/PNG)", delete_drawing: "Delete Drawing", budget_vs_real: "Budget vs Actual", worker_summary: "Worker Summary", planned: "Budget", realized: "Actual", manual_budget: "Budget Hours", order_num: "Order #", client: "Client", status: "Status", project: "Project", address: "Address", material: "Material", treatment: "PRESERVATION", planning: "Planning", main_date: "DATE", del_date: "DELIVERY", measure: "Measurement", start: "START", end: "END", executor: "EXECUTOR", team: "TEAM", desc: "Notes", select: "Select...", calc_days: "Auto-calc: Duration (excl. weekend) based on budget", staal: "Steel", rvs: "RVS", alu: "Alu", andere: "Other", is_subcontracted: "Partner / Subcontract", select_sub: "Select Partner", sub_msg: "Subcontracted."
+            new_order: "New Order", edit_order: "Edit Order", manual: "MANUAL", import: "IMPORT EXCEL", hours_logs: "HOURS (LOGS)", media: "MEDIA (PHOTOS)", drawings: "DRAWINGS", models_tab: "3D MODEL", add_model: "ADD MODEL (.GLB)", no_model: "No 3D model available.", model_uploaded: "Model uploaded", delete_model: "Delete Model", processing: "Processing...", wait: "Wait.", error_req: "Required fields missing.", cancel: "Cancel", save: "Save", save_changes: "Update", excel_title: "Excel Import", excel_sub: "Upload .xlsx or .xls to auto-fill fields.", choose_file: "Choose Excel File", log_date: "Date", log_worker: "Worker", log_cat: "Activity", log_hours: "Hours", log_note: "Note", log_total: "Total", no_logs: "No logs.", no_photos: "No photos.", delete_photo: "Delete Photo", no_drawings: "No drawings.", add_drawing: "ADD FILE (PDF/JPG/PNG)", delete_drawing: "Delete Drawing", budget_vs_real: "Budget vs Actual", worker_summary: "Worker Summary", planned: "Budget", realized: "Actual", manual_budget: "Budget Hours", order_num: "Order #", client: "Client", status: "Status", project: "Project", address: "Address", material: "Material", treatment: "PRESERVATION", planning: "Planning", main_date: "DATE", del_date: "DELIVERY", measure: "Measurement", start: "START", end: "END", executor: "EXECUTOR", team: "TEAM", desc: "Notes", select: "Select...", calc_days: "Auto-calc: Duration (excl. weekend) based on budget", staal: "Steel", rvs: "RVS", alu: "Alu", andere: "Other", is_subcontracted: "Partner / Subcontract", select_sub: "Select Partner", sub_msg: "Subcontracted."
         },
         it: {
-            new_order: "Nuovo Ordine", edit_order: "Modifica Ordine", manual: "MANUALE", import: "IMPORTA EXCEL", hours_logs: "ORE (LOGS)", media: "MEDIA (FOTO)", drawings: "DISEGNI", processing: "Elaborazione...", wait: "Attendere...", error_req: "Numero e Cliente obbligatori.", cancel: "Annulla", save: "Salva", save_changes: "Aggiorna", excel_title: "Importazione Excel", excel_sub: "Carica file .xlsx o .xls per riempire i campi automaticamente.", choose_file: "Scegli File Excel", log_date: "Data", log_worker: "Operaio", log_cat: "Cat", log_hours: "Ore", log_note: "Nota", log_total: "Totale", no_logs: "Nessun log.", no_photos: "Nessuna foto.", delete_photo: "Elimina Foto", no_drawings: "Nessun disegno.", add_drawing: "AGGIUNGI FILE (PDF/JPG/PNG)", delete_drawing: "Elimina Disegno", budget_vs_real: "Budget vs Reale", worker_summary: "Riepilogo", planned: "Previsto", realized: "Reale", manual_budget: "Budget Ore", order_num: "N. Ordine", client: "Cliente", status: "Stato", project: "Progetto", address: "Indirizzo", material: "Materiale", treatment: "TRATTAMENTO", planning: "Planning", main_date: "DATA", del_date: "CONSEGNA", measure: "Misure", start: "INIZIO", end: "FINE", executor: "ESECUTORE", team: "SQUADRA", desc: "Note", select: "Seleziona...", calc_days: "Auto-calcolo: Durata (escl. weekend) basata su budget", staal: "Acciaio", rvs: "Inox", alu: "Alluminio", andere: "Altro", is_subcontracted: "Ditta Esterna / Partner", select_sub: "Seleziona Ditta Esterna", sub_msg: "Lavoro affidato a esterno."
+            new_order: "Nuovo Ordine", edit_order: "Modifica Ordine", manual: "MANUALE", import: "IMPORTA EXCEL", hours_logs: "ORE (LOGS)", media: "MEDIA (FOTO)", drawings: "DISEGNI", models_tab: "3D MODELLO", add_model: "AGGIUNGI MODELLO (.GLB)", no_model: "Nessun modello 3D disponibile.", model_uploaded: "Modello caricato", delete_model: "Elimina Modello", processing: "Elaborazione...", wait: "Attendere...", error_req: "Numero e Cliente obbligatori.", cancel: "Annulla", save: "Salva", save_changes: "Aggiorna", excel_title: "Importazione Excel", excel_sub: "Carica file .xlsx o .xls per riempire i campi automaticamente.", choose_file: "Scegli File Excel", log_date: "Data", log_worker: "Operaio", log_cat: "Cat", log_hours: "Ore", log_note: "Nota", log_total: "Totale", no_logs: "Nessun log.", no_photos: "Nessuna foto.", delete_photo: "Elimina Foto", no_drawings: "Nessun disegno.", add_drawing: "AGGIUNGI FILE (PDF/JPG/PNG)", delete_drawing: "Elimina Disegno", budget_vs_real: "Budget vs Reale", worker_summary: "Riepilogo", planned: "Previsto", realized: "Reale", manual_budget: "Budget Ore", order_num: "N. Ordine", client: "Cliente", status: "Stato", project: "Progetto", address: "Indirizzo", material: "Materiale", treatment: "TRATTAMENTO", planning: "Planning", main_date: "DATA", del_date: "CONSEGNA", measure: "Misure", start: "INIZIO", end: "FINE", executor: "ESECUTORE", team: "SQUADRA", desc: "Note", select: "Seleziona...", calc_days: "Auto-calcolo: Durata (escl. weekend) basata su budget", staal: "Acciaio", rvs: "Inox", alu: "Alluminio", andere: "Altro", is_subcontracted: "Ditta Esterna / Partner", select_sub: "Seleziona Ditta Esterna", sub_msg: "Lavoro affidato a esterno."
         }
     };
     return dict[language]?.[key] || key;
@@ -125,6 +126,8 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
   const excelInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const glbInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingGlb, setIsUploadingGlb] = useState(false);
 
   // Ridimensiona e comprime un'immagine prima di salvarla
   const resizeAndCompress = (file: File, maxSize = 1200, quality = 0.78): Promise<string> => {
@@ -148,6 +151,33 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
       img.onerror = reject;
       img.src = url;
     });
+  };
+
+  const handleGlbUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !editingOrder) return;
+      setIsUploadingGlb(true);
+      try {
+          const { uploadGlbModel } = await import('../supabaseAPI');
+          const url = await uploadGlbModel(editingOrder.id, file);
+          if (url) {
+              setFormData(prev => ({ ...prev, glbUrl: url }));
+              if (onUpdateGlbModel) onUpdateGlbModel(editingOrder.id, url);
+          } else {
+              setError('Errore upload modello 3D.');
+          }
+      } catch (err) { setError('Errore upload modello 3D.'); }
+      finally { setIsUploadingGlb(false); if (glbInputRef.current) glbInputRef.current.value = ''; }
+  };
+
+  const handleDeleteGlbModel = async () => {
+      if (!editingOrder || !formData.glbUrl) return;
+      try {
+          const { deleteGlbModel } = await import('../supabaseAPI');
+          await deleteGlbModel(formData.glbUrl);
+          setFormData(prev => ({ ...prev, glbUrl: undefined }));
+          if (onUpdateGlbModel) onUpdateGlbModel(editingOrder.id, null);
+      } catch (err) { setError('Errore eliminazione modello 3D.'); }
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -309,6 +339,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
                 <button onClick={() => setActiveTab('hours')} className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 ${activeTab === 'hours' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}><Clock size={16} /> {t('hours_logs')}</button>
                 <button onClick={() => setActiveTab('drawings')} className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 ${activeTab === 'drawings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}><FileText size={16} /> {t('drawings')} <span className="ml-1 bg-blue-100 text-blue-700 px-1.5 rounded-full" style={{ fontSize: `${scaleFontSize(10)}px` }}>{formData.drawings?.length || 0}</span></button>
                 <button onClick={() => setActiveTab('photos')} className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 ${activeTab === 'photos' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400'}`}><ImageIcon size={16} /> {t('media')}</button>
+                <button onClick={() => setActiveTab('models')} className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 ${activeTab === 'models' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-400'}`}><Box size={16} /> {t('models_tab')}</button>
               </>
           )}
         </div>
@@ -498,6 +529,33 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({ isOpen, onClose, o
                           <img src={photo} className="w-full h-full object-cover cursor-pointer" onClick={() => setViewingPhoto(photo)} alt="Mediapart" />
                       </div>
                   ))}
+                  </div>
+              </div>
+          )}
+
+          {activeTab === 'models' && editingOrder && (
+              <div className="space-y-4">
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                      <h3 className="font-bold text-gray-700 text-sm mb-3 flex items-center gap-2"><Box size={16} className="text-emerald-600" /> {t('models_tab')}</h3>
+                      {formData.glbUrl ? (
+                          <div className="space-y-3">
+                              <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                  <Box size={20} className="text-emerald-600 shrink-0" />
+                                  <span className="text-sm font-bold text-emerald-800 truncate flex-1">{t('model_uploaded')}</span>
+                                  <button type="button" onClick={handleDeleteGlbModel} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0" title={t('delete_model')}><Trash2 size={16}/></button>
+                              </div>
+                              <a href={formData.glbUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline break-all">{formData.glbUrl}</a>
+                          </div>
+                      ) : (
+                          <p className="text-sm text-gray-400 italic mb-3">{t('no_model')}</p>
+                      )}
+                      <div className="mt-3">
+                          <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={handleGlbUpload} />
+                          <button type="button" onClick={() => glbInputRef.current?.click()} disabled={isUploadingGlb} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                              {isUploadingGlb ? <Loader2 size={14} className="animate-spin" /> : <Box size={14} />}
+                              {isUploadingGlb ? t('processing') : t('add_model')}
+                          </button>
+                      </div>
                   </div>
               </div>
           )}

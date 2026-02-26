@@ -1,7 +1,23 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { WorkOrder, OrderStatus, Language, TimeLog, WorkerPasswords, Department, MobilePermissions } from '../types';
-import { Search, Calendar, MapPin, Hash, User, RefreshCw, AlertCircle, CheckCircle, Clock, Info, Hammer, PaintBucket, Layers, Wrench, Truck, LogOut, Lock, ChevronLeft, Plus, Save, ArrowRight, Check, Trash2, Camera, FileText, Eye, X } from 'lucide-react';
+import { Search, Calendar, MapPin, Hash, User, RefreshCw, AlertCircle, CheckCircle, Clock, Info, Hammer, PaintBucket, Layers, Wrench, Truck, LogOut, Lock, ChevronLeft, Plus, Save, ArrowRight, Check, Trash2, Camera, FileText, Eye, X, Box } from 'lucide-react';
+
+// Declare model-viewer web component for TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'model-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        alt?: string;
+        'auto-rotate'?: boolean | string;
+        'camera-controls'?: boolean | string;
+        ar?: boolean | string;
+        style?: React.CSSProperties;
+      };
+    }
+  }
+}
 
 interface WerkplaatsViewProps {
   orders: WorkOrder[];
@@ -66,6 +82,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
 
   // Media Viewer State
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
+  const [viewingModel, setViewingModel] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Ridimensiona e comprime un'immagine prima di salvarla come base64
@@ -94,9 +111,9 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
 
   const t = (key: string) => {
     const dict: Record<string, Record<string, string>> = {
-        nl: { title: "Werkplaats Overzicht", search_placeholder: "Zoek op nummer...", updated: "Geüpdatet:", no_results: "Geen orders gevonden.", mat: "Mat", beh: "Beh", desc: "Omschrijving", plan: "Planning", login_title: "Werkplaats", select_name: "Selecteer uw naam", enter_pass: "Wachtwoord", login: "Inloggen", logout: "Uitloggen", back: "Terug", wrong_pass: "Wachtwoord onjuist", log_hours: "Uren Registreren", date: "Datum", hours: "Uren", note: "Notitie", save_log: "Opslaan", log_history: "Uren", total_hours: "Totaal", select_category: "Afdeling", select_activity: "Activiteit", report_ready: "GEREED", report_ready_desc: "Laat een bericht achter.", confirm_ready: "Bevestig", cancel: "Annuleren", delete_confirm: "Verwijderen?", hidden: "*** (Verborgen)", photos: "Foto's", drawings: "Tekeningen", uploadPhoto: "Foto Verzenden", no_photos: "Geen foto's.", no_drawings: "Geen tekeningen.", drawings_loaded: "Tekening" },
-        en: { title: "Workshop Overview", search_placeholder: "Search...", updated: "Updated:", no_results: "No orders.", mat: "Mat", beh: "Trt", desc: "Desc", plan: "Plan", login_title: "Workshop", select_name: "Select name", enter_pass: "Password", login: "Login", logout: "Logout", back: "Back", wrong_pass: "Incorrect", log_hours: "Log Hours", date: "Date", hours: "Hrs", note: "Note", save_log: "Save", log_history: "Logs", total_hours: "Total", select_category: "Dept.", select_activity: "Activity", report_ready: "READY", report_ready_desc: "Leave a note.", confirm_ready: "Confirm", cancel: "Cancel", delete_confirm: "Delete?", hidden: "*** (Hidden)", photos: "Photos", drawings: "Drawings", uploadPhoto: "Send Photo", no_photos: "No photos.", no_drawings: "No drawings.", drawings_loaded: "Drawing" },
-        it: { title: "Officina", search_placeholder: "Cerca...", updated: "Aggiornato:", no_results: "Nessun ordine.", mat: "Mat", beh: "Tratt", desc: "Desc", plan: "Piano", login_title: "Login", select_name: "Seleziona nome", enter_pass: "Password", login: "Accedi", logout: "Esci", back: "Indietro", wrong_pass: "Errata", log_hours: "Ore", date: "Data", hours: "Ore", note: "Nota", save_log: "Salva", log_history: "Storico", total_hours: "Tot", select_category: "Reparto", select_activity: "Attività", report_ready: "PRONTO", report_ready_desc: "Lascia una nota.", confirm_ready: "Conferma", cancel: "Annulla", delete_confirm: "Eliminare?", hidden: "*** (Nascosto)", photos: "Foto", drawings: "Disegni", uploadPhoto: "Invia Foto", no_photos: "Nessuna foto.", no_drawings: "Nessun disegno.", drawings_loaded: "Disegno" }
+        nl: { title: "Werkplaats Overzicht", search_placeholder: "Zoek op nummer...", updated: "Geüpdatet:", no_results: "Geen orders gevonden.", mat: "Mat", beh: "Beh", desc: "Omschrijving", plan: "Planning", login_title: "Werkplaats", select_name: "Selecteer uw naam", enter_pass: "Wachtwoord", login: "Inloggen", logout: "Uitloggen", back: "Terug", wrong_pass: "Wachtwoord onjuist", log_hours: "Uren Registreren", date: "Datum", hours: "Uren", note: "Notitie", save_log: "Opslaan", log_history: "Uren", total_hours: "Totaal", select_category: "Afdeling", select_activity: "Activiteit", report_ready: "GEREED", report_ready_desc: "Laat een bericht achter.", confirm_ready: "Bevestig", cancel: "Annuleren", delete_confirm: "Verwijderen?", hidden: "*** (Verborgen)", photos: "Foto's", drawings: "Tekeningen", uploadPhoto: "Foto Verzenden", no_photos: "Geen foto's.", no_drawings: "Geen tekeningen.", drawings_loaded: "Tekening", model_3d: "3D Model", view_3d: "3D Bekijken", no_model: "Geen 3D model." },
+        en: { title: "Workshop Overview", search_placeholder: "Search...", updated: "Updated:", no_results: "No orders.", mat: "Mat", beh: "Trt", desc: "Desc", plan: "Plan", login_title: "Workshop", select_name: "Select name", enter_pass: "Password", login: "Login", logout: "Logout", back: "Back", wrong_pass: "Incorrect", log_hours: "Log Hours", date: "Date", hours: "Hrs", note: "Note", save_log: "Save", log_history: "Logs", total_hours: "Total", select_category: "Dept.", select_activity: "Activity", report_ready: "READY", report_ready_desc: "Leave a note.", confirm_ready: "Confirm", cancel: "Cancel", delete_confirm: "Delete?", hidden: "*** (Hidden)", photos: "Photos", drawings: "Drawings", uploadPhoto: "Send Photo", no_photos: "No photos.", no_drawings: "No drawings.", drawings_loaded: "Drawing", model_3d: "3D Model", view_3d: "View 3D", no_model: "No 3D model." },
+        it: { title: "Officina", search_placeholder: "Cerca...", updated: "Aggiornato:", no_results: "Nessun ordine.", mat: "Mat", beh: "Tratt", desc: "Desc", plan: "Piano", login_title: "Login", select_name: "Seleziona nome", enter_pass: "Password", login: "Accedi", logout: "Esci", back: "Indietro", wrong_pass: "Errata", log_hours: "Ore", date: "Data", hours: "Ore", note: "Nota", save_log: "Salva", log_history: "Storico", total_hours: "Tot", select_category: "Reparto", select_activity: "Attività", report_ready: "PRONTO", report_ready_desc: "Lascia una nota.", confirm_ready: "Conferma", cancel: "Annulla", delete_confirm: "Eliminare?", hidden: "*** (Nascosto)", photos: "Foto", drawings: "Disegni", uploadPhoto: "Invia Foto", no_photos: "Nessuna foto.", no_drawings: "Nessun disegno.", drawings_loaded: "Disegno", model_3d: "Modello 3D", view_3d: "Vedi 3D", no_model: "Nessun modello 3D." }
     };
     return dict[language]?.[key] || key;
   };
@@ -283,6 +300,25 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                   </div>
               )}
 
+              {/* 3D MODEL VIEWER OVERLAY */}
+              {viewingModel && (
+                  <div className="fixed inset-0 z-[125] bg-black flex flex-col">
+                      <div className={`flex justify-between items-center p-4 ${selectedTheme === 'gold' ? 'text-[#d4af37]' : selectedTheme === 'space' ? 'text-[#00f2fe]' : 'text-blue-500'}`}>
+                          <span className="font-bold text-lg flex items-center gap-2"><Box size={20}/> {t('model_3d')}</span>
+                          <button onClick={() => setViewingModel(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><X size={24} className="text-white"/></button>
+                      </div>
+                      <div className="flex-1">
+                          <model-viewer
+                              src={viewingModel}
+                              alt="3D Model"
+                              camera-controls
+                              auto-rotate
+                              style={{ width: '100%', height: '100%', background: '#111' }}
+                          />
+                      </div>
+                  </div>
+              )}
+
               <header className={`${selectedTheme === 'light' ? 'bg-white' : 'bg-[#141414]/90'} backdrop-blur-xl p-4 shadow-md border-b ${selectedTheme === 'gold' ? 'border-[#d4af37]/30' : selectedTheme === 'space' ? 'border-[#00f2fe]/30' : 'border-blue-200'} sticky top-0 z-20 flex items-center gap-4`}>
                   <button onClick={() => { setSelectedOrderForLog(null); resetLogForm(); }} className={`p-2 rounded-full border transition-colors ${selectedTheme === 'light' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 border-blue-300' : selectedTheme === 'gold' ? 'bg-[#0a0a0a] text-[#d4af37] hover:bg-[#d4af37]/20 border-[#d4af37]/30' : 'bg-[#0a0a0a] text-[#00f2fe] hover:bg-[#00f2fe]/20 border-[#00f2fe]/30'}`}><ChevronLeft size={24} /></button>
                   <div className="overflow-hidden flex-1">
@@ -395,7 +431,17 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                             )}
                         </div>
 
-                        {/* HISTORY */}
+                        {/* 3D MODEL SECTION */}
+                        {order.glbUrl && (
+                            <div className={`${selectedTheme === 'light' ? 'bg-blue-50 border-blue-200' : 'bg-[#141414]/80 border-[#d4af37]/20'} backdrop-blur-md p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'space' ? 'border-[#00f2fe]/20' : ''}`}>
+                                <div className="flex justify-between items-center">
+                                    <h3 className={`font-bold ${selectedTheme === 'light' ? 'text-blue-900' : 'text-gray-300'} flex items-center gap-2 text-xs uppercase tracking-widest`}><Box size={16} className={selectedTheme === 'gold' ? 'text-[#d4af37]' : selectedTheme === 'space' ? 'text-[#00f2fe]' : 'text-blue-600'}/> {t('model_3d')}</h3>
+                                    <button onClick={() => setViewingModel(order.glbUrl!)} className={`text-[10px] ${selectedTheme === 'gold' ? 'bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#d4af37] border-[#d4af37]/30' : 'bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border-[#00f2fe]/30'} px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 border transition-colors`}><Eye size={12}/> {t('view_3d')}</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* HISTORY */}}
                         {order.timeLogs && order.timeLogs.length > 0 && (
                             <div className={`${selectedTheme === 'light' ? 'bg-blue-50 border-blue-200' : 'bg-[#141414]/80 border-[#d4af37]/20'} backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'space' ? 'border-[#00f2fe]/20' : ''} overflow-hidden`}>
                                 <div className={`p-4 ${selectedTheme === 'light' ? 'bg-blue-100 border-blue-300' : 'bg-[#0a0a0a]/80 border-gray-800'} border-b flex justify-between items-center`}>

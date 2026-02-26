@@ -433,6 +433,10 @@ const App: React.FC = () => {
       }
   };
 
+  const handleUpdateGlbModel = async (orderId: string, glbUrl: string | null) => {
+      handleInlineUpdate(orderId, 'glbUrl', glbUrl ?? undefined);
+  };
+
   const handleAddOrderClick = () => {
       setSelectedOrderForEdit(null); // Clear any selection
       setIsAddOrderModalOpen(true);
@@ -1414,6 +1418,7 @@ const App: React.FC = () => {
              setSelectedOrderForEdit(null);
          }} 
          onSave={handleSaveOrder}
+         onUpdateGlbModel={handleUpdateGlbModel}
          workers={workers}
          subcontractors={companySettings?.subcontractors || []}
          editingOrder={selectedOrderForEdit}

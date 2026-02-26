@@ -177,6 +177,9 @@ export interface WorkOrder {
   // DRAWINGS (v6.7.05) - Base64 Strings (PDF)
   drawings?: string[];
 
+  // 3D MODEL (v6.8.26) - Supabase Storage URL
+  glbUrl?: string;
+
   // BUDGET ORE (Importato da Excel)
   hourBudget?: {
       kbw?: number;

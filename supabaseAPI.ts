@@ -355,6 +355,34 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
 };
 
 // ============================================
+// STORAGE FUNCTIONS (Supabase Storage)
+// ============================================
+
+export const uploadGlbModel = async (orderId: string, file: File): Promise<string | null> => {
+  try {
+    const path = `${orderId}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('order-models').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from('order-models').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (error) {
+    console.error('Error uploading GLB model:', error);
+    return null;
+  }
+};
+
+export const deleteGlbModel = async (glbUrl: string): Promise<void> => {
+  try {
+    const urlParts = glbUrl.split('/order-models/');
+    if (urlParts.length > 1) {
+      await supabase.storage.from('order-models').remove([urlParts[1]]);
+    }
+  } catch (error) {
+    console.error('Error deleting GLB model:', error);
+  }
+};
+
+// ============================================
 // DIRECT PATCH FUNCTIONS (bypass complex pipeline)
 // ============================================
 
