@@ -1,3 +1,4 @@
+// App.tsx v2.3.3 — Smart per-order sync protection (savingOrderIdsRef)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LayoutGrid, Minimize, Maximize, Tv, Calendar as CalendarIcon, X, Check, FileText, Loader2, Save, Printer, Plus, Minus, AlertCircle } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -261,8 +262,10 @@ const App: React.FC = () => {
 
   // --- REF FOR AUTO-SAVE & SYNC (Avoid Stale Closures) ---
   const stateRef = useRef({ orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors });
-  // Ref per bloccare la sincronizzazione durante un salvataggio attivo
-  const isSavingRef = useRef(false);
+  // v2.3.3: Protezione per-ordine — solo gli ordini in fase di salvataggio vengono esclusi dal sync
+  const savingOrderIdsRef = useRef<Set<string>>(new Set());
+  // Blocca TUTTO il sync solo durante salvataggi globali (saveData/saveAllData)
+  const isSavingGlobalRef = useRef(false);
   const showWizardRef = useRef(false);
   // Blocca la sync di company_settings per 15s dopo ogni salvataggio manuale
   const settingsProtectedUntilRef = useRef(0);
@@ -276,8 +279,8 @@ const App: React.FC = () => {
 
   // --- AUTO-SYNC Function (Supabase) ---
   const syncDataIncremental = async () => {
-    // Non sovrascrivere dati durante un salvataggio attivo o durante il wizard
-    if (isSavingRef.current || showWizardRef.current) return;
+    // Non sovrascrivere dati durante un salvataggio globale o durante il wizard
+    if (isSavingGlobalRef.current || showWizardRef.current) return;
     try {
       setIsSyncing(true);
       const serverData = await SupabaseAPI.fetchAllData();
@@ -289,8 +292,23 @@ const App: React.FC = () => {
       const serverWorkLogs = serverData.workLogs || [];
       const serverWorkerPasswords = serverData.workerPasswords || {};
 
-      // Ordini: sempre aggiorna dal server — JSON.stringify è inaffidabile su oggetti complessi con chiavi in ordine diverso
-      setOrders(serverOrders);
+      // v2.3.3: Smart merge — aggiorna tutti gli ordini DAL SERVER, ma preserva quelli in fase di edit locale
+      if (savingOrderIdsRef.current.size > 0) {
+        const mergedOrders = serverOrders.map(serverOrder => {
+          if (savingOrderIdsRef.current.has(serverOrder.id)) {
+            // Preserva la versione locale dell'ordine in fase di salvataggio
+            const localOrder = current.orders.find(o => o.id === serverOrder.id);
+            return localOrder || serverOrder;
+          }
+          return serverOrder;
+        });
+        // Aggiungi eventuali ordini locali nuovi non ancora sul server
+        const serverIds = new Set(serverOrders.map(o => o.id));
+        const newLocalOrders = current.orders.filter(o => savingOrderIdsRef.current.has(o.id) && !serverIds.has(o.id));
+        setOrders([...mergedOrders, ...newLocalOrders]);
+      } else {
+        setOrders(serverOrders);
+      }
       setLastSyncTime(Date.now());
       if (JSON.stringify(serverWorkers) !== JSON.stringify(current.workers)) {
         setWorkers(serverWorkers);
@@ -365,7 +383,7 @@ const App: React.FC = () => {
   }, []);
 
   const saveData = async (updatedData: any) => {
-      isSavingRef.current = true;
+      isSavingGlobalRef.current = true;
       try {
           const keys = Object.keys(updatedData);
           const isFullSave = keys.length === 0;
@@ -391,7 +409,7 @@ const App: React.FC = () => {
           console.error("Error saving to Supabase", e);
       } finally {
           // Delay maggiore per evitare race condition con sync Supabase lento
-          setTimeout(() => { isSavingRef.current = false; }, 5000);
+          setTimeout(() => { isSavingGlobalRef.current = false; }, 5000);
       }
   };
 
@@ -420,7 +438,7 @@ const App: React.FC = () => {
   };
 
   const handleInlineUpdate = async (id: string, field: string, value: any) => {
-      isSavingRef.current = true; // Blocca sync PRIMA dell'await
+      savingOrderIdsRef.current.add(id); // v2.3.3: Proteggi solo quest'ordine
       const updatedOrders = orders.map(o => o.id === id ? { ...o, [field]: value } : o);
       setOrders(updatedOrders);
       const orderToUpdate = updatedOrders.find(o => o.id === id);
@@ -429,7 +447,7 @@ const App: React.FC = () => {
               await SupabaseAPI.saveOrder(orderToUpdate);
           }
       } finally {
-          setTimeout(() => { isSavingRef.current = false; }, 5000);
+          setTimeout(() => { savingOrderIdsRef.current.delete(id); }, 2000);
       }
   };
 
@@ -449,7 +467,7 @@ const App: React.FC = () => {
 
   // Unified Save/Update Handler
   const handleSaveOrder = async (order: WorkOrder) => {
-      isSavingRef.current = true; // Blocca sync PRIMA dell'await
+      savingOrderIdsRef.current.add(order.id); // v2.3.3: Proteggi solo quest'ordine
       // Clear missingAssignment flag when an order is saved (even without real changes)
       const cleanOrder: WorkOrder = { ...order, missingAssignment: false };
       order = cleanOrder;
@@ -470,7 +488,7 @@ const App: React.FC = () => {
       try {
           await SupabaseAPI.saveOrder(order);
       } finally {
-          setTimeout(() => { isSavingRef.current = false; }, 5000);
+          setTimeout(() => { savingOrderIdsRef.current.delete(order.id); }, 2000);
       }
       setIsAddOrderModalOpen(false);
       setSelectedOrderForEdit(null);
@@ -1363,18 +1381,18 @@ const App: React.FC = () => {
               workers={workers}
               workerPasswords={companySettings?.workerPasswords}
               onSaveOrder={async (o) => { 
-                  isSavingRef.current = true;
+                  savingOrderIdsRef.current.add(o.id);
                   const clean = { ...o, missingAssignment: false }; 
                   const updated = orders.map(x => x.id === clean.id ? clean : x); 
                   setOrders(updated); 
-                  try { await SupabaseAPI.saveOrder(clean); } finally { setTimeout(() => { isSavingRef.current = false; }, 5000); }
+                  try { await SupabaseAPI.saveOrder(clean); } finally { setTimeout(() => { savingOrderIdsRef.current.delete(o.id); }, 2000); }
               }}
               onDeleteLog={async (orderId, logId) => {
-                      isSavingRef.current = true;
+                      savingOrderIdsRef.current.add(orderId);
                       const updated = orders.map(o => o.id === orderId ? { ...o, timeLogs: (o.timeLogs || []).filter(l => l.id !== logId) } : o);
                       setOrders(updated);
                       const orderToSave = updated.find(o => o.id === orderId);
-                      try { if (orderToSave) await SupabaseAPI.saveOrder(orderToSave); } finally { setTimeout(() => { isSavingRef.current = false; }, 5000); }
+                      try { if (orderToSave) await SupabaseAPI.saveOrder(orderToSave); } finally { setTimeout(() => { savingOrderIdsRef.current.delete(orderId); }, 2000); }
               }}
               onSaveOrderPhoto={handleSaveOrderPhoto}
               language={currentLang}
