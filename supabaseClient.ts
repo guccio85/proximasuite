@@ -1,9 +1,23 @@
+// v1.0.1 - Cache busting: override fetch globale per forzare no-cache su tutte le chiamate REST Supabase
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (url: RequestInfo | URL, options?: RequestInit) => {
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...(options?.headers ?? {}),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+    }
+  }
+});
 
 // Database Types
 export interface SupabaseWorkOrder {
