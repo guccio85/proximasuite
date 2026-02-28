@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { WorkOrder, OrderStatus, Language, TimeLog, WorkerPasswords, Department, MobilePermissions } from '../types';
+import { WorkOrder, OrderStatus, Language, TimeLog, WorkLog, WorkerPasswords, Department, MobilePermissions } from '../types';
 import { Search, Calendar, MapPin, Hash, User, RefreshCw, AlertCircle, CheckCircle, Clock, Info, Hammer, PaintBucket, Layers, Wrench, Truck, LogOut, Lock, ChevronLeft, Plus, Save, ArrowRight, Check, Trash2, Camera, FileText, Eye, X, Box } from 'lucide-react';
 
 // Declare model-viewer web component for TypeScript
@@ -28,6 +28,7 @@ interface WerkplaatsViewProps {
   onDeleteLog?: (orderId: string, logId: string) => void;
   onSaveOrderPhoto?: (orderId: string, photoBase64: string) => void;
   onFetchOrderDetail?: (orderId: string) => Promise<WorkOrder | null>;
+  onSaveWorkLog?: (orderId: string, log: TimeLog) => void;
   language?: Language;
   departments?: Department[];
   mobilePermissions?: MobilePermissions;
@@ -35,7 +36,7 @@ interface WerkplaatsViewProps {
 }
 
 export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({ 
-    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, onFetchOrderDetail, language = 'nl', departments = [], mobilePermissions, theme = 'gold'
+    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, onFetchOrderDetail, onSaveWorkLog, language = 'nl', departments = [], mobilePermissions, theme = 'gold'
 }) => {
   // DEBUG: Log departments to verify activities are loaded
   console.log('🔍 WerkplaatsView departments:', departments);
@@ -153,6 +154,8 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       };
       const updatedOrder = { ...selectedOrderForLog, timeLogs: [...(selectedOrderForLog.timeLogs || []), newLog] };
       onSaveOrder(updatedOrder);
+      // Also persist to work_logs table so daily report can read it
+      onSaveWorkLog?.(selectedOrderForLog.id, newLog);
       resetLogForm();
       setSelectedOrderForLog(updatedOrder); 
   };
@@ -194,6 +197,9 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       // Reset input per permettere il caricamento della stessa foto
       e.target.value = '';
   };
+
+  // Per-worker permissions — MobilePermissions is Record<workerName, WorkerMobilePermissions>
+  const workerPerms = loggedInWorker ? mobilePermissions?.[loggedInWorker] : undefined;
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -351,7 +357,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                       <>
                         <div className={`${selectedTheme === 'light' ? 'bg-blue-50 backdrop-blur-md border-blue-200' : 'bg-[#141414]/80 backdrop-blur-md'} p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'gold' ? 'border-[#d4af37]/20' : selectedTheme === 'space' ? 'border-[#00f2fe]/20' : 'border-blue-200'}`}>
                             <h3 className={`font-black text-lg ${selectedTheme === 'light' ? 'text-blue-900' : 'text-gray-200'} mb-1.5 truncate`}>
-                                {mobilePermissions?.showClientName ? order.opdrachtgever : t('hidden')}
+                                {workerPerms?.showClientName ? order.opdrachtgever : t('hidden')}
                             </h3>
                             {order.projectRef && <p className={`text-sm ${selectedTheme === 'light' ? 'text-blue-800' : 'text-gray-400'} mb-4 truncate font-medium`}>{order.projectRef}</p>}
                             <div className="flex flex-wrap gap-2">
@@ -405,7 +411,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                         {/* MEDIA & FILES SECTION */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* PHOTOS */}
-                            {mobilePermissions?.allowPhotoUpload && (
+                            {workerPerms?.allowPhotoUpload && (
                                 <div className={`${selectedTheme === 'light' ? 'bg-blue-50 border-blue-200' : 'bg-[#141414]/80 border-[#d4af37]/20'} backdrop-blur-md p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'space' ? 'border-[#00f2fe]/20' : ''}`}>
                                     <div className="flex justify-between items-center mb-3">
                                         <h3 className={`font-bold ${selectedTheme === 'light' ? 'text-blue-900' : 'text-gray-300'} flex items-center gap-2 text-xs uppercase tracking-widest`}><Camera size={16} className={selectedTheme === 'gold' ? 'text-[#d4af37]' : selectedTheme === 'space' ? 'text-[#00f2fe]' : 'text-blue-600'}/> {t('photos')}</h3>
@@ -423,7 +429,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                             )}
 
                             {/* DRAWINGS */}
-                            {mobilePermissions?.allowDrawingsView && (
+                            {workerPerms?.allowDrawingsView && (
                                 <div className={`${selectedTheme === 'light' ? 'bg-blue-50 border-blue-200' : 'bg-[#141414]/80 border-[#d4af37]/20'} backdrop-blur-md p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border ${selectedTheme === 'space' ? 'border-[#00f2fe]/20' : ''}`}>
                                     <h3 className={`font-bold ${selectedTheme === 'light' ? 'text-blue-900' : 'text-gray-300'} flex items-center gap-2 text-xs uppercase tracking-widest mb-3`}><FileText size={16} className={selectedTheme === 'gold' ? 'text-[#d4af37]' : selectedTheme === 'space' ? 'text-[#00f2fe]' : 'text-blue-600'}/> {t('drawings')}</h3>
                                     {order.drawings && order.drawings.length > 0 ? (

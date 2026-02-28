@@ -1495,6 +1495,21 @@ const App: React.FC = () => {
               }}
               onSaveOrderPhoto={handleSaveOrderPhoto}
               onFetchOrderDetail={async (orderId) => SupabaseAPI.fetchOrderDetail(orderId)}
+              onSaveWorkLog={async (orderId, log) => {
+                  const workLog: WorkLog = {
+                      id: log.id,
+                      orderId,
+                      worker: log.worker,
+                      date: log.date,
+                      hours: log.hours,
+                      note: log.note || '',
+                      timestamp: log.timestamp,
+                      category: log.category,
+                      activity: log.activity,
+                  };
+                  setWorkLogs(prev => [...prev, workLog]);
+                  try { await SupabaseAPI.saveWorkLog(workLog); } catch (e) { console.error('❌ saveWorkLog failed:', e); }
+              }}
               language={currentLang}
               departments={companySettings?.departments}
               mobilePermissions={companySettings?.mobilePermissions}
