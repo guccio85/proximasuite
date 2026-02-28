@@ -284,7 +284,7 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
     // Fetch basic settings — v2.3.5 Bis: exclude logo_url (Base64) from sync cycle; use fetchCompanyLogo() once at startup
     const { data: settingsData, error: settingsError } = await supabase
       .from('company_settings')
-      .select('id, company_name, admin_password, admin_profiles, primary_color, mobile_permissions')
+      .select('id, company_name, admin_password, admin_profiles, mobile_permissions')
       .eq('id', 'default')
       .single();
 
@@ -364,7 +364,7 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
     const settings: CompanySettings = {
       name: settingsData?.company_name || '',
       logoUrl: __logoUrl || undefined, // logo_url excluded from sync; loaded once at startup via fetchCompanyLogo()
-      primaryColor: settingsData?.primary_color || undefined,
+      primaryColor: undefined, // column removed from schema — not used
       taskColors: taskColors, // Include fetched colors
       adminPassword: settingsData?.admin_password || '1111',
       adminProfiles: settingsData?.admin_profiles || [],
