@@ -8,9 +8,11 @@ import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, Globa
 // v2.3.5: fetchAllOrders supports incremental sync via `since` (ISO timestamp)
 // When `since` is provided, returns only rows modified after that time → near-zero egress when nothing changed
 export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
+  // v2.3.5 Bis: select only scalar columns — no `data` JSONB to avoid Base64 photos/drawings in sync
+  // Full detail (photos, drawings, timeLogs) loaded on demand via fetchOrderDetail(id)
   let query = supabase
     .from('work_orders')
-    .select('*')
+    .select('id, order_number, opdrachtgever, project_ref, address, scheduled_date, scheduled_end_date, status, updated_at, assigned_worker, material, created_at, assignment_type')
     .order('created_at', { ascending: false });
 
   if (since) {
@@ -21,84 +23,42 @@ export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
   
   if (error) {
     console.error('❌ Error fetching orders from Supabase:', error);
-    console.error('❌ Error details:', JSON.stringify(error, null, 2));
     return [];
   }
   
   if (!data || data.length === 0) {
-    console.warn('⚠️ No orders found in Supabase');
+    if (!since) console.warn('⚠️ No orders found in Supabase');
     return [];
   }
   
-  console.log('📦 Supabase raw data received:', data.length, 'rows');
-  console.log('📦 First raw row sample:', JSON.stringify(data[0], null, 2).substring(0, 500));
+  console.log('📦 Orders received (lightweight):', data.length, 'rows', since ? `(incremental since ${since})` : '(full)');
   
-  // Converti da formato Supabase a formato app
-  // IMPORTANTE: Se row.data è null/undefined, ricostruiamo l'oggetto dai campi delle colonne
+  // Build lightweight WorkOrder objects from scalar columns only.
+  // photos[], timeLogs[], drawings[], description etc. are intentionally empty —
+  // fetchOrderDetail(id) hydrates them on demand when the user opens an order.
   const orders = (data || []).map((row: any, index: number) => {
-    // Validazione base
-    if (!row.id) {
-      console.error(`❌ Order at index ${index} has no ID, skipping`);
-      return null;
-    }
-    
-    if (row.data && typeof row.data === 'object') {
-      // Se esiste JSONB data, usalo come base e sovrascrivi con campi delle colonne
-      const order = {
-        ...row.data,
-        id: row.id, // ✅ SEMPRE usa l'ID della tabella (che è l'ID originale)
-        orderNumber: row.order_number || row.data.orderNumber || '',
-        opdrachtgever: row.opdrachtgever || row.data.opdrachtgever || '',
-        projectRef: row.project_ref || row.data.projectRef || '',
-        address: row.address || row.data.address || '',
-        scheduledDate: row.scheduled_date || row.data.scheduledDate || '',
-        scheduledEndDate: row.scheduled_end_date || row.data.scheduledEndDate || '',
-        material: row.material || row.data.material || '',
-        status: row.status || row.data.status || 'In afwachting',
-        createdAt: row.created_at || row.data.createdAt || Date.now(),
-        assignedWorker: row.assigned_worker || row.data.assignedWorker || '',
-        assignmentType: row.assignment_type || row.data.assignmentType || '',
-        // Assicura che i campi essenziali esistano
-        hourBudget: row.data.hourBudget || { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
-        photos: row.data.photos || [],
-        timeLogs: row.data.timeLogs || [],
-        description: row.data.description || '',
-      };
-      return order;
-    } else {
-      // Se row.data è null, ricostruiamo l'oggetto minimo dai campi delle colonne
-      console.warn('⚠️ Order with null data field, using column values. ID:', row.id);
-      return {
-        id: row.id,
-        orderNumber: row.order_number || '',
-        opdrachtgever: row.opdrachtgever || '',
-        projectRef: row.project_ref || '',
-        address: row.address || '',
-        scheduledDate: row.scheduled_date || '',
-        scheduledEndDate: row.scheduled_end_date || '',
-        material: row.material || '',
-        status: row.status || 'In afwachting',
-        createdAt: row.created_at || Date.now(),
-        description: '',
-        hourBudget: { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
-        deliveryDate: '',
-        photos: [],
-        timeLogs: [],
-      };
-    }
-  }).filter(order => order !== null);
+    if (!row.id) { console.error(`❌ Order at index ${index} has no ID, skipping`); return null; }
+    return {
+      id: row.id,
+      orderNumber: row.order_number || '',
+      opdrachtgever: row.opdrachtgever || '',
+      projectRef: row.project_ref || '',
+      address: row.address || '',
+      scheduledDate: row.scheduled_date || '',
+      scheduledEndDate: row.scheduled_end_date || '',
+      material: row.material || '',
+      status: row.status || 'In afwachting',
+      createdAt: row.created_at || Date.now(),
+      assignedWorker: row.assigned_worker || '',
+      assignmentType: row.assignment_type || '',
+      updated_at: row.updated_at || '',
+      // Detail fields — empty until fetchOrderDetail() is called
+      hourBudget: { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
+      photos: [], timeLogs: [], drawings: [], description: '', deliveryDate: '',
+    } as WorkOrder;
+  }).filter((o): o is WorkOrder => o !== null);
   
   console.log('✅ Orders converted successfully:', orders.length);
-  if (orders.length > 0) {
-    console.log('📊 Sample orders:', orders.slice(0, 3).map(o => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      status: o.status,
-      scheduledDate: o.scheduledDate
-    })));
-  } else {
-    console.warn('⚠️ No orders to display after conversion');
-  }
   
   return orders;
 };
@@ -196,9 +156,10 @@ export const deleteOrder = async (orderId: string): Promise<boolean> => {
 // ============================================
 
 export const fetchAllWorkers = async (): Promise<{ workers: string[], workerPasswords: Record<string, string>, workerContacts: Record<string, any> }> => {
+  // v2.3.5 Bis: exclude contact_data (contains photo Base64) from sync — loaded lazily via fetchWorkerContact()
   const { data, error } = await supabase
     .from('workers')
-    .select('*');
+    .select('id, name, password');
 
   if (error) {
     console.error('Error fetching workers:', error);
@@ -207,14 +168,23 @@ export const fetchAllWorkers = async (): Promise<{ workers: string[], workerPass
 
   const workers = (data || []).map((w: any) => w.name);
   const workerPasswords: Record<string, string> = {};
-  const workerContacts: Record<string, any> = {};
 
   (data || []).forEach((w: any) => {
     if (w.password) workerPasswords[w.name] = w.password;
-    if (w.contact_data) workerContacts[w.name] = w.contact_data;
   });
 
-  return { workers, workerPasswords, workerContacts };
+  return { workers, workerPasswords, workerContacts: {} };
+};
+
+// v2.3.5 Bis: Lazy-load contact detail (including photo) for a single worker — called only when admin opens profile
+export const fetchWorkerContact = async (workerName: string): Promise<any | null> => {
+  const { data, error } = await supabase
+    .from('workers')
+    .select('contact_data')
+    .eq('name', workerName)
+    .single();
+  if (error || !data) return null;
+  return (data as any).contact_data || null;
 };
 
 export const saveWorker = async (name: string, password?: string, contactData?: any): Promise<boolean> => {
@@ -284,10 +254,10 @@ export const updateWorkerContacts = async (contacts: Record<string, any>): Promi
 
 export const fetchCompanySettings = async (): Promise<CompanySettings | null> => {
   try {
-    // Fetch basic settings
+    // Fetch basic settings — v2.3.5 Bis: exclude logo_url (Base64) from sync cycle; use fetchCompanyLogo() once at startup
     const { data: settingsData, error: settingsError } = await supabase
       .from('company_settings')
-      .select('*')
+      .select('id, company_name, admin_password, admin_profiles, primary_color, mobile_permissions')
       .eq('id', 'default')
       .single();
 
@@ -366,7 +336,7 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
     const { __logoUrl, ...cleanMobilePerms } = rawMobilePerms as any;
     const settings: CompanySettings = {
       name: settingsData?.company_name || '',
-      logoUrl: __logoUrl || settingsData?.logo_url || undefined, // Support both storage methods
+      logoUrl: __logoUrl || undefined, // logo_url excluded from sync; loaded once at startup via fetchCompanyLogo()
       primaryColor: settingsData?.primary_color || undefined,
       taskColors: taskColors, // Include fetched colors
       adminPassword: settingsData?.admin_password || '1111',
@@ -383,6 +353,18 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
     console.error('Error fetching company settings:', error);
     return null;
   }
+};
+
+// v2.3.5 Bis: Load company logo once at startup — NOT included in 4-second sync cycle
+export const fetchCompanyLogo = async (): Promise<string | undefined> => {
+  const { data, error } = await supabase
+    .from('company_settings')
+    .select('logo_url, mobile_permissions')
+    .eq('id', 'default')
+    .single();
+  if (error || !data) return undefined;
+  const legacyLogo = ((data as any).mobile_permissions as any)?.__logoUrl;
+  return (data as any).logo_url || legacyLogo || undefined;
 };
 
 // ============================================

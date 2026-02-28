@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Trash2, Edit2, Check, X, User, Lock, Mail, Phone, MapPin, Camera, FileText, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Language, WorkerPasswords, WorkerContact } from '../types';
+import * as SupabaseAPI from '../supabaseAPI';
 
 interface WorkerManagerProps {
   workers: string[];
@@ -113,12 +114,19 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
     }
   };
 
-  const startEdit = (worker: string) => {
+  const startEdit = async (worker: string) => {
     setEditingWorker(worker);
     setEditName(worker);
     setEditPass(workerPasswords[worker] || '');
-    setEditContact(workerContacts[worker] || {});
+    setEditContact(workerContacts[worker] || {}); // instant placeholder
     setExpandedWorker(worker);
+    // v2.3.5 Bis: lazy-load contact detail (photo, email, phone) only when profile is opened
+    try {
+      const contact = await SupabaseAPI.fetchWorkerContact(worker);
+      if (contact) setEditContact(contact);
+    } catch (e) {
+      console.error('Could not load worker contact:', e);
+    }
   };
 
   const saveEdit = () => {
@@ -250,13 +258,9 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
                   {/* Worker Card Header */}
                   <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {/* Photo / Avatar */}
+                      {/* Avatar — always initials in list; photo loads only in edit profile (v2.3.5 Bis) */}
                       <div className="w-14 h-14 rounded-full overflow-hidden bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0 border-2 border-white shadow-sm">
-                        {contact.photo ? (
-                          <img src={contact.photo} alt={worker} className="w-full h-full object-cover" />
-                        ) : (
-                          worker.substring(0, 2).toUpperCase()
-                        )}
+                        {worker.substring(0, 2).toUpperCase()}
                       </div>
                       
                       <div className="flex-1 min-w-0">

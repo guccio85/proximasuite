@@ -235,6 +235,10 @@ const App: React.FC = () => {
          setCompanySettings(data.settings);
          localStorage.setItem('snep_settings', JSON.stringify(data.settings));
          if (data.settings.taskColors) setTaskColors(data.settings.taskColors);
+         // v2.3.5 Bis: load logo once at startup (not in 4s sync cycle — it's a heavy Base64)
+         SupabaseAPI.fetchCompanyLogo().then(logoUrl => {
+           if (logoUrl) setCompanySettings(prev => prev ? { ...prev, logoUrl } : prev);
+         });
       }
       console.log('✅ Data loaded from Supabase');
     } catch (e) {
@@ -1608,7 +1612,7 @@ const App: React.FC = () => {
     }`}>
         {currentView === 'archief' ? <FileText size={18}/> : <LayoutGrid size={18}/>}
         {currentView === 'archief' ? t.archiveTitle : t.dashboardTitle}
-        <span className={`ml-3 text-[10px] font-black px-2 py-0.5 rounded-full ${theme === 'gold' ? 'bg-[#d4af37] text-black' : 'bg-blue-600 text-white'}`}>v2.3.1</span>
+        <span className={`ml-3 text-[10px] font-black px-2 py-0.5 rounded-full ${theme === 'gold' ? 'bg-[#d4af37] text-black' : 'bg-blue-600 text-white'}`}>v2.3.5</span>
     </h2>
                                     <div className="flex items-center gap-2">
                                         <label className="flex items-center gap-2 mr-2">

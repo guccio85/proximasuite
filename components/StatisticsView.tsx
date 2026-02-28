@@ -22,7 +22,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
   const [passInput, setPassInput] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('ALL');
 
-  const VERSION = "v2.3.1";
+  const VERSION = "v2.3.5";
 
   const t = (key: string) => {
       const dict: Record<string, Record<string, string>> = {
