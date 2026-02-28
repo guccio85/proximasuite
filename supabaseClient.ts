@@ -7,14 +7,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     fetch: (url: RequestInfo | URL, options?: RequestInit) => {
-      return fetch(url, {
-        ...options,
-        headers: {
-          ...(options?.headers ?? {}),
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        }
-      });
+      // Use new Headers() to properly copy all existing headers (including apikey/Authorization)
+      // Spreading a Headers instance with {...} loses all its entries — hence the 401 bug
+      const headers = new Headers(options?.headers);
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      headers.set('Pragma', 'no-cache');
+      return fetch(url, { ...options, headers });
     }
   }
 });
