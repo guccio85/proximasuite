@@ -233,15 +233,26 @@ const App: React.FC = () => {
       setGlobalDays(data.globalDays || []); 
       setWorkLogs(data.workLogs || []);
       
-      // Load Settings - workerContacts già inclusi da fetchAllData
-      if (data.settings && data.settings.name) {
+      // Load Settings
+      if (data.settings) {
+         // Accept settings even if company name is empty — don't block on an empty name field
          setCompanySettings(data.settings);
          localStorage.setItem('snep_settings', JSON.stringify(data.settings));
          if (data.settings.taskColors) setTaskColors(data.settings.taskColors);
-         // v2.3.5 Bis: load logo once at startup (not in 4s sync cycle — it's a heavy Base64)
          SupabaseAPI.fetchCompanyLogo().then(logoUrl => {
            if (logoUrl) setCompanySettings(prev => prev ? { ...prev, logoUrl } : prev);
          });
+      } else if ((data.orders || []).length > 0) {
+         // DB is reachable and has orders but returned no settings row — create minimal stub
+         // so the app never falls into the SetupWizard when data is present
+         const stub: CompanySettings = {
+           name: 'SNEP',
+           adminPassword: '1111',
+           workerPasswords: {},
+           workerContacts: {},
+         } as any;
+         setCompanySettings(stub);
+         console.warn('⚠️ No settings row found — using stub to bypass wizard. Run Setup later to configure.');
       }
       // v2.3.5: mark initial load as the baseline — all subsequent syncs are incremental from here
       lastSyncTimestampRef.current = fetchStartTime;
@@ -311,28 +322,30 @@ const App: React.FC = () => {
       // v2.3.5 fix: functional setOrders(prev=>) — never reads stale closure state.
       // Also preserves lazily-loaded rich data (photos, timeLogs) on orders already opened by the user.
       if (!since) {
-        // Full sync: replace all orders, but keep in-flight saves + preserve rich detail already loaded
-        setOrders(prevOrders => {
-          const savingIds = savingOrderIdsRef.current;
-          const merged = serverOrders.map(serverOrder => {
-            const prev = prevOrders.find(o => o.id === serverOrder.id);
-            if (savingIds.has(serverOrder.id)) return prev || serverOrder; // preserve in-flight save
-            if (!prev) return serverOrder;
-            // Preserve rich fields already loaded via fetchOrderDetail
-            return {
-              ...prev,          // keep locally loaded rich data as base
-              ...serverOrder,   // overwrite all scalar/status fields from server
-              photos:    prev.photos?.length    ? prev.photos    : serverOrder.photos,
-              timeLogs:  prev.timeLogs?.length  ? prev.timeLogs  : serverOrder.timeLogs,
-              drawings:  prev.drawings?.length  ? prev.drawings  : serverOrder.drawings,
-              description: prev.description     || serverOrder.description,
-            };
+        // Full sync — guard: only replace state if server actually returned rows
+        if (serverOrders.length === 0) {
+          console.warn('⚠️ Full sync returned 0 orders — keeping local state to avoid wipe');
+        } else {
+          setOrders(prevOrders => {
+            const savingIds = savingOrderIdsRef.current;
+            const merged = serverOrders.map(serverOrder => {
+              const prev = prevOrders.find(o => o.id === serverOrder.id);
+              if (savingIds.has(serverOrder.id)) return prev || serverOrder; // preserve in-flight save
+              if (!prev) return serverOrder;
+              return {
+                ...prev,
+                ...serverOrder,
+                photos:    prev.photos?.length    ? prev.photos    : serverOrder.photos,
+                timeLogs:  prev.timeLogs?.length  ? prev.timeLogs  : serverOrder.timeLogs,
+                drawings:  prev.drawings?.length  ? prev.drawings  : serverOrder.drawings,
+                description: prev.description     || serverOrder.description,
+              };
+            });
+            const serverIds = new Set(serverOrders.map(o => o.id));
+            const pendingNew = prevOrders.filter(o => savingIds.has(o.id) && !serverIds.has(o.id));
+            return [...merged, ...pendingNew];
           });
-          // Keep locally unsaved new orders not yet on server
-          const serverIds = new Set(serverOrders.map(o => o.id));
-          const pendingNew = prevOrders.filter(o => savingIds.has(o.id) && !serverIds.has(o.id));
-          return [...merged, ...pendingNew];
-        });
+        }
       } else if (serverOrders.length > 0) {
         // Incremental: only changed rows came back — surgical ID-based merge
         setOrders(prevOrders => {
