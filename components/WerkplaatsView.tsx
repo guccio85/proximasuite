@@ -457,7 +457,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                                             <div className="min-w-0 pr-2">
                                                 <div className={`font-bold flex items-center gap-2 text-sm truncate mb-0.5 ${selectedTheme === 'light' ? 'text-blue-900' : 'text-gray-200'}`}>
                                                     {log.worker}
-                                                    {log.activity && <span className={`text-[9px] ${selectedTheme === 'light' ? 'bg-blue-200 text-blue-900 border-blue-300' : 'bg-gray-800 text-gray-400 border-gray-700'} px-1.5 py-0.5 rounded-md border uppercase tracking-wide`}>{log.activity}</span>}
+                                                    {(log.activity || log.category) && <span className={`text-[9px] ${selectedTheme === 'light' ? 'bg-blue-200 text-blue-900 border-blue-300' : 'bg-gray-800 text-gray-400 border-gray-700'} px-1.5 py-0.5 rounded-md border uppercase tracking-wide`}>{log.activity || log.category}</span>}
                                                 </div>
                                                 <div className={`${selectedTheme === 'light' ? 'text-blue-800' : 'text-gray-500'} text-[10px] truncate max-w-[200px] font-medium`}>{formatDate(log.date)} {log.note && <span className="italic ml-1 opacity-80">• {log.note}</span>}</div>
                                             </div>
