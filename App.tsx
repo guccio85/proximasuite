@@ -306,36 +306,56 @@ const App: React.FC = () => {
       const serverWorkLogs = serverData.workLogs || [];
       const serverWorkerPasswords = serverData.workerPasswords || {};
 
-      // v2.3.5: Merge incrementale ordini
+      // v2.3.5 fix: functional setOrders(prev=>) — never reads stale closure state.
+      // Also preserves lazily-loaded rich data (photos, timeLogs) on orders already opened by the user.
       if (!since) {
-        // Primo sync completo: applica smart merge per protezione per-ordine
-        if (savingOrderIdsRef.current.size > 0) {
-          const mergedOrders = serverOrders.map(serverOrder => {
-            if (savingOrderIdsRef.current.has(serverOrder.id)) {
-              const localOrder = current.orders.find(o => o.id === serverOrder.id);
-              return localOrder || serverOrder;
-            }
-            return serverOrder;
+        // Full sync: replace all orders, but keep in-flight saves + preserve rich detail already loaded
+        setOrders(prevOrders => {
+          const savingIds = savingOrderIdsRef.current;
+          const merged = serverOrders.map(serverOrder => {
+            const prev = prevOrders.find(o => o.id === serverOrder.id);
+            if (savingIds.has(serverOrder.id)) return prev || serverOrder; // preserve in-flight save
+            if (!prev) return serverOrder;
+            // Preserve rich fields already loaded via fetchOrderDetail
+            return {
+              ...prev,          // keep locally loaded rich data as base
+              ...serverOrder,   // overwrite all scalar/status fields from server
+              photos:    prev.photos?.length    ? prev.photos    : serverOrder.photos,
+              timeLogs:  prev.timeLogs?.length  ? prev.timeLogs  : serverOrder.timeLogs,
+              drawings:  prev.drawings?.length  ? prev.drawings  : serverOrder.drawings,
+              description: prev.description     || serverOrder.description,
+            };
           });
+          // Keep locally unsaved new orders not yet on server
           const serverIds = new Set(serverOrders.map(o => o.id));
-          const newLocalOrders = current.orders.filter(o => savingOrderIdsRef.current.has(o.id) && !serverIds.has(o.id));
-          setOrders([...mergedOrders, ...newLocalOrders]);
-        } else {
-          setOrders(serverOrders);
-        }
-      } else if (serverOrders.length > 0) {
-        // Sync incrementale: solo ordini modificati — merge nel locale
-        const mergedOrders = current.orders.map(localOrder => {
-          if (savingOrderIdsRef.current.has(localOrder.id)) return localOrder; // preserva ordini in salvataggio
-          const serverVersion = serverOrders.find(s => s.id === localOrder.id);
-          return serverVersion || localOrder;
+          const pendingNew = prevOrders.filter(o => savingIds.has(o.id) && !serverIds.has(o.id));
+          return [...merged, ...pendingNew];
         });
-        // Aggiungi nuovi ordini non ancora in stato locale
-        const localIds = new Set(current.orders.map(o => o.id));
-        const newOrders = serverOrders.filter(o => !localIds.has(o.id));
-        setOrders([...mergedOrders, ...newOrders]);
+      } else if (serverOrders.length > 0) {
+        // Incremental: only changed rows came back — surgical ID-based merge
+        setOrders(prevOrders => {
+          const savingIds = savingOrderIdsRef.current;
+          const localIds = new Set(prevOrders.map(o => o.id));
+          const merged = prevOrders.map(localOrder => {
+            if (savingIds.has(localOrder.id)) return localOrder; // protect in-flight save
+            const sv = serverOrders.find(s => s.id === localOrder.id);
+            if (!sv) return localOrder; // unchanged on server
+            // Merge: server wins on scalar fields, local wins on rich detail already fetched
+            return {
+              ...localOrder,
+              ...sv,
+              photos:    localOrder.photos?.length    ? localOrder.photos    : sv.photos,
+              timeLogs:  localOrder.timeLogs?.length  ? localOrder.timeLogs  : sv.timeLogs,
+              drawings:  localOrder.drawings?.length  ? localOrder.drawings  : sv.drawings,
+              description: localOrder.description     || sv.description,
+            };
+          });
+          // Append brand-new orders not yet in local state
+          const brandNew = serverOrders.filter(o => !localIds.has(o.id));
+          return [...merged, ...brandNew];
+        });
       }
-      // else: since impostato AND serverOrders vuoto → niente è cambiato, mantieni stato locale
+      // else: since set AND serverOrders empty → nothing changed, keep local state
 
       // Aggiorna timestamp per il prossimo sync incrementale
       lastSyncTimestampRef.current = fetchStartTime;
@@ -467,14 +487,19 @@ const App: React.FC = () => {
   };
 
   const handleInlineUpdate = async (id: string, field: string, value: any) => {
-      savingOrderIdsRef.current.add(id); // v2.3.3: Proteggi solo quest'ordine
-      const updatedOrders = orders.map(o => o.id === id ? { ...o, [field]: value } : o);
-      setOrders(updatedOrders);
-      const orderToUpdate = updatedOrders.find(o => o.id === id);
+      savingOrderIdsRef.current.add(id);
+      // Functional update — always reads latest prevOrders, never a stale closure
+      let savedOrder: WorkOrder | undefined;
+      setOrders(prev => {
+          const updated = prev.map(o => o.id === id ? { ...o, [field]: value } : o);
+          savedOrder = updated.find(o => o.id === id);
+          return updated;
+      });
       try {
-          if (orderToUpdate) {
-              await SupabaseAPI.saveOrder(orderToUpdate);
-          }
+          // Small delay to let React flush the functional update before we read savedOrder
+          await new Promise(r => setTimeout(r, 0));
+          const latest = stateRef.current.orders.find(o => o.id === id);
+          if (latest) await SupabaseAPI.saveOrder(latest);
       } finally {
           setTimeout(() => { savingOrderIdsRef.current.delete(id); }, 2000);
       }
@@ -502,28 +527,22 @@ const App: React.FC = () => {
 
   // Unified Save/Update Handler
   const handleSaveOrder = async (order: WorkOrder) => {
-      savingOrderIdsRef.current.add(order.id); // v2.3.3: Proteggi solo quest'ordine
-      // Clear missingAssignment flag when an order is saved (even without real changes)
+      savingOrderIdsRef.current.add(order.id);
       const cleanOrder: WorkOrder = { ...order, missingAssignment: false };
-      order = cleanOrder;
-      let updatedOrders;
-      // Check if updating an existing order
-      const existingIndex = orders.findIndex(o => o.id === order.id);
-      
-      if (existingIndex >= 0) {
-          // Update
-          updatedOrders = [...orders];
-          updatedOrders[existingIndex] = order;
-      } else {
-          // Create New
-          updatedOrders = [...orders, order];
-      }
-      
-      setOrders(updatedOrders);
+      // Functional update — always reads latest prevOrders, never a stale closure
+      setOrders(prev => {
+          const idx = prev.findIndex(o => o.id === cleanOrder.id);
+          if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = cleanOrder;
+              return next;
+          }
+          return [...prev, cleanOrder];
+      });
       try {
-          await SupabaseAPI.saveOrder(order);
+          await SupabaseAPI.saveOrder(cleanOrder);
       } finally {
-          setTimeout(() => { savingOrderIdsRef.current.delete(order.id); }, 2000);
+          setTimeout(() => { savingOrderIdsRef.current.delete(cleanOrder.id); }, 2000);
       }
       setIsAddOrderModalOpen(false);
       setSelectedOrderForEdit(null);
