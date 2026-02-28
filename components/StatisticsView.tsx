@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { WorkOrder, Language, TaskColors } from '../types';
+import { WorkOrder, WorkLog, Language, TaskColors } from '../types';
 import { BarChart3, Clock, PieChart, Layers, TrendingUp, List, Trash2, Edit2, Check, X, Lock, Filter, Building2, FileText, Info, Hexagon } from 'lucide-react';
 
 interface StatisticsViewProps {
   orders: WorkOrder[];
+  workLogs?: WorkLog[];
   taskColors: TaskColors;
   language?: Language;
   onDeleteLog?: (orderId: string, logId: string) => void;
@@ -13,7 +14,7 @@ interface StatisticsViewProps {
 }
 
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ 
-    orders, taskColors, language = 'nl', onDeleteLog, onUpdateLog, adminPassword, theme = 'gold' 
+    orders, workLogs = [], taskColors, language = 'nl', onDeleteLog, onUpdateLog, adminPassword, theme = 'gold' 
 }) => {
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editHours, setEditHours] = useState('');
@@ -125,16 +126,15 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
   }, [orders, selectedOrderId]);
 
   const allLogs = useMemo(() => {
-      const logs: any[] = [];
-      filteredOrders.forEach(o => {
-          if (o.timeLogs) {
-              o.timeLogs.forEach(l => {
-                  logs.push({ ...l, orderNumber: o.orderNumber, client: o.opdrachtgever, orderId: o.id });
-              });
-          }
-      });
-      return logs.sort((a, b) => b.timestamp - a.timestamp);
-  }, [filteredOrders]);
+      // Use flat workLogs array (work_logs table) — orders.timeLogs is always [] due to lazy loading
+      const filtered = selectedOrderId === 'ALL'
+          ? workLogs
+          : workLogs.filter(l => l.orderId === selectedOrderId);
+      return filtered.map(l => {
+          const o = orders.find(ord => ord.id === l.orderId);
+          return { ...l, orderNumber: o?.orderNumber ?? '', client: o?.opdrachtgever ?? '' };
+      }).sort((a, b) => b.timestamp - a.timestamp);
+  }, [workLogs, orders, selectedOrderId]);
 
   const stats = useMemo(() => {
       let total = 0;
@@ -160,25 +160,29 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
               totalBudget += (Number(budget.wvb) || 0) + (Number(budget.kbw) || 0) + (Number(budget.plw) || 0) + (Number(budget.rvs) || 0) + (Number(budget.montage) || 0) + (Number(budget.reis) || 0);
           }
 
-          if (order.timeLogs) {
-              order.timeLogs.forEach(log => {
-                  const h = log.hours || 0;
-                  total += h;
-                  if (log.category === 'KBW') cats.KBW.logged += h;
-                  else if (log.category === 'PLW') cats.PLW.logged += h;
-                  else if (log.category === 'MONTAGE') {
-                      if (log.activity?.toUpperCase() === 'REISTIJD') cats.REIS.logged += h;
-                      else cats.MONTAGE.logged += h;
-                  }
-                  else if (log.category === 'WVB') cats.WVB.logged += h;
-                  else if (log.category === 'RVS') cats.RVS.logged += h;
-                  else if (log.category === 'REIS') cats.REIS.logged += h;
-              });
+          // hours per category come from flat workLogs (computed after the orders loop)
+      });
+
+      // Hours from flat workLogs (always up-to-date, orders.timeLogs is lazy [])
+      const logsToCount = selectedOrderId === 'ALL'
+          ? workLogs
+          : workLogs.filter(l => l.orderId === selectedOrderId);
+      logsToCount.forEach(log => {
+          const h = log.hours || 0;
+          total += h;
+          if (log.category === 'KBW') cats.KBW.logged += h;
+          else if (log.category === 'PLW') cats.PLW.logged += h;
+          else if (log.category === 'MONTAGE') {
+              if (log.activity?.toUpperCase() === 'REISTIJD') cats.REIS.logged += h;
+              else cats.MONTAGE.logged += h;
           }
+          else if (log.category === 'WVB') cats.WVB.logged += h;
+          else if (log.category === 'RVS') cats.RVS.logged += h;
+          else if (log.category === 'REIS') cats.REIS.logged += h;
       });
 
       return { total, totalBudget, cats };
-  }, [filteredOrders]);
+  }, [filteredOrders, workLogs, selectedOrderId]);
 
   const verifyAndExecute = () => {
       if (!passwordPrompt) return;

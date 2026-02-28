@@ -1364,17 +1364,16 @@ const App: React.FC = () => {
                   <div className="p-8 h-full overflow-y-auto">
                       <StatisticsView
                           orders={orders}
+                          workLogs={workLogs}
                           taskColors={taskColors}
                           language={currentLang}
-                          onDeleteLog={(orderId: string, logId: string) => {
-                              const updated = orders.map(o => o.id === orderId ? { ...o, timeLogs: (o.timeLogs || []).filter(l => l.id !== logId) } : o);
-                              setOrders(updated);
-                              saveData({ orders: updated });
+                          onDeleteLog={async (orderId: string, logId: string) => {
+                              setWorkLogs(prev => prev.filter(l => l.id !== logId));
+                              try { await SupabaseAPI.deleteWorkLog(logId); } catch (e) { console.error('deleteWorkLog failed:', e); }
                           }}
-                          onUpdateLog={(orderId: string, logId: string, hours: number, note: string) => {
-                              const updated = orders.map(o => o.id === orderId ? { ...o, timeLogs: (o.timeLogs || []).map(l => l.id === logId ? { ...l, hours, note } : l) } : o);
-                              setOrders(updated);
-                              saveData({ orders: updated });
+                          onUpdateLog={async (orderId: string, logId: string, hours: number, note: string) => {
+                              setWorkLogs(prev => prev.map(l => l.id === logId ? { ...l, hours, note } : l));
+                              try { await SupabaseAPI.updateWorkLog(logId, hours, note); } catch (e) { console.error('updateWorkLog failed:', e); }
                           }}
                           adminPassword={companySettings?.adminPassword}
                           theme={theme}

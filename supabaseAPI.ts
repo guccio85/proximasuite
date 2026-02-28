@@ -815,6 +815,18 @@ export const fetchAllWorkLogs = async (): Promise<WorkLog[]> => {
   }));
 };
 
+export const deleteWorkLog = async (id: string): Promise<boolean> => {
+  const { error } = await supabase.from('work_logs').delete().eq('id', id);
+  if (error) { console.error('Error deleting work log:', error); return false; }
+  return true;
+};
+
+export const updateWorkLog = async (id: string, hours: number, note: string): Promise<boolean> => {
+  const { error } = await supabase.from('work_logs').update({ hours, note }).eq('id', id);
+  if (error) { console.error('Error updating work log:', error); return false; }
+  return true;
+};
+
 export const saveWorkLog = async (log: WorkLog): Promise<boolean> => {
   const { error } = await supabase
     .from('work_logs')
