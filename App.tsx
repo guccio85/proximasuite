@@ -215,8 +215,6 @@ const App: React.FC = () => {
   const fetchData = async () => {
     const fetchStartTime = new Date().toISOString();
     try {
-      // v2.3.5 diagnostics — awaited so logs appear before fetchAllData
-      await SupabaseAPI.testConnection();
       const data = await SupabaseAPI.fetchAllData();
       setOrders(data.orders || []);
       console.log('✅ Orders loaded from Supabase:', data.orders?.length || 0);

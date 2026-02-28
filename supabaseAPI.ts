@@ -35,20 +35,14 @@ export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
 
   const { data, error } = await query;
 
-  // 🔍 DIAGNOSTIC — always log raw response so we can see what Supabase actually returned
-  console.log('🔍 RAW fetchAllOrders response:', {
-    rowCount: data?.length ?? 'null',
-    error: error ? { code: error.code, message: error.message } : null,
-    firstRowKeys: data?.[0] ? Object.keys(data[0]) : [],
-  });
-  
   if (error) {
     console.error('❌ Error fetching orders from Supabase:', error.code, error.message);
     return [];
   }
   
   if (!data || data.length === 0) {
-    console.warn('⚠️ fetchAllOrders: Supabase returned 0 rows.', since ? `(incremental since ${since})` : '(full fetch — DB may be empty or RLS blocking)');
+    // Incremental returning 0 is normal (nothing changed) — only warn on full fetch
+    if (!since) console.warn('⚠️ fetchAllOrders: full fetch returned 0 rows — DB may be empty or RLS blocking');
     return [];
   }
   
