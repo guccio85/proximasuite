@@ -213,7 +213,9 @@ const App: React.FC = () => {
 
   // --- Data Fetching (Supabase) ---
   const fetchData = async () => {
-    const fetchStartTime = new Date().toISOString(); // v2.3.5: record before fetch
+    const fetchStartTime = new Date().toISOString();
+    // v2.3.5 diagnostics — remove after confirming connection
+    await SupabaseAPI.testConnection();
     try {
       const data = await SupabaseAPI.fetchAllData();
       setOrders(data.orders || []);

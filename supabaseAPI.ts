@@ -1,6 +1,20 @@
 import { supabase } from './supabaseClient';
 import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, GlobalDay, WorkLog, TimeLog, TaskColors } from './types';
 
+// v2.3.5 diagnostics: quick connectivity check used at app startup
+export const testConnection = async (): Promise<void> => {
+  console.log('🔑 VITE_SUPABASE_URL set:', import.meta.env.VITE_SUPABASE_URL ? 'SI ✅' : 'NO ❌');
+  console.log('🔑 VITE_SUPABASE_ANON_KEY set:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SI ✅' : 'NO ❌');
+  try {
+    const { data, error } = await supabase.from('work_orders').select('id').limit(1);
+    console.log('🛢️ Test connessione work_orders:', { data, error });
+    if (error) console.error('❌ Supabase connection error:', error.message, error.code, error.details);
+    else console.log('✅ Supabase risponde. Righe trovate:', data?.length ?? 0);
+  } catch (e) {
+    console.error('❌ testConnection eccezione:', e);
+  }
+};
+
 // ============================================
 // WORK ORDERS
 // ============================================
