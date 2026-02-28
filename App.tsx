@@ -213,6 +213,7 @@ const App: React.FC = () => {
 
   // --- Data Fetching (Supabase) ---
   const fetchData = async () => {
+    const fetchStartTime = new Date().toISOString(); // v2.3.5: record before fetch
     try {
       const data = await SupabaseAPI.fetchAllData();
       setOrders(data.orders || []);
@@ -240,7 +241,9 @@ const App: React.FC = () => {
            if (logoUrl) setCompanySettings(prev => prev ? { ...prev, logoUrl } : prev);
          });
       }
-      console.log('✅ Data loaded from Supabase');
+      // v2.3.5: mark initial load as the baseline — all subsequent syncs are incremental from here
+      lastSyncTimestampRef.current = fetchStartTime;
+      console.log('✅ Data loaded from Supabase — incremental sync baseline set:', fetchStartTime);
     } catch (e) {
       console.error("Error fetching data from Supabase", e);
     } finally {
@@ -287,13 +290,16 @@ const App: React.FC = () => {
   const syncDataIncremental = async () => {
     // Non sovrascrivere dati durante un salvataggio globale o durante il wizard
     if (isSavingGlobalRef.current || showWizardRef.current) return;
-    const fetchStartTime = new Date().toISOString(); // v2.3.5: prima del fetch per non perdere scritture concorrenti
-    const since = lastSyncTimestampRef.current || undefined;
+    const fetchStartTime = new Date().toISOString();
+    const current = stateRef.current;
+    // v2.3.5 safety net: force full sync if local orders are empty (e.g. initial fetchData failed)
+    const since = (lastSyncTimestampRef.current && current.orders.length > 0)
+      ? lastSyncTimestampRef.current
+      : undefined;
     try {
       setIsSyncing(true);
       const serverData = await SupabaseAPI.fetchAllData(since);
 
-      const current = stateRef.current;
       const serverOrders: WorkOrder[] = serverData.orders || [];
       const serverWorkers: string[] = serverData.workers || [];
       const serverAvailabilities = serverData.availabilities || [];
