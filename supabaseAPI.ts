@@ -6,10 +6,12 @@ export const testConnection = async (): Promise<void> => {
   console.log('🔑 VITE_SUPABASE_URL set:', import.meta.env.VITE_SUPABASE_URL ? 'SI ✅' : 'NO ❌');
   console.log('🔑 VITE_SUPABASE_ANON_KEY set:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SI ✅' : 'NO ❌');
   try {
-    const { data, error } = await supabase.from('work_orders').select('id').limit(1);
-    console.log('🛢️ Test connessione work_orders:', { data, error });
-    if (error) console.error('❌ Supabase connection error:', error.message, error.code, error.details);
-    else console.log('✅ Supabase risponde. Righe trovate:', data?.length ?? 0);
+    const { data, error } = await supabase.from('work_orders').select('id').limit(5);
+    if (error) {
+      console.error('❌ testConnection ERROR:', error.code, error.message, error.details);
+    } else {
+      console.log('✅ testConnection OK — Righe trovate (limit 5):', data?.length ?? 0, '| IDs:', data?.map((r: any) => r.id));
+    }
   } catch (e) {
     console.error('❌ testConnection eccezione:', e);
   }
@@ -22,28 +24,31 @@ export const testConnection = async (): Promise<void> => {
 // v2.3.5: fetchAllOrders supports incremental sync via `since` (ISO timestamp)
 // When `since` is provided, returns only rows modified after that time → near-zero egress when nothing changed
 export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
-  // v2.3.5 Bis: select(*) but strip heavy Base64 fields from row.data during mapping.
-  // This gives all scalar planning fields (requiredTasks, kbwDate, etc.) without crashing the UI,
-  // while avoiding egress from photos/timeLogs/drawings in the sync cycle.
-  // fetchOrderDetail(id) restores the stripped fields on demand when the user opens an order.
   let query = supabase
     .from('work_orders')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('*');
+  // NOTE: removed .order('created_at') — was causing silent Postgres error if column type mismatch
 
   if (since) {
     query = query.gt('updated_at', since);
   }
 
   const { data, error } = await query;
+
+  // 🔍 DIAGNOSTIC — always log raw response so we can see what Supabase actually returned
+  console.log('🔍 RAW fetchAllOrders response:', {
+    rowCount: data?.length ?? 'null',
+    error: error ? { code: error.code, message: error.message } : null,
+    firstRowKeys: data?.[0] ? Object.keys(data[0]) : [],
+  });
   
   if (error) {
-    console.error('❌ Error fetching orders from Supabase:', error);
+    console.error('❌ Error fetching orders from Supabase:', error.code, error.message);
     return [];
   }
   
   if (!data || data.length === 0) {
-    if (!since) console.warn('⚠️ No orders found in Supabase');
+    console.warn('⚠️ fetchAllOrders: Supabase returned 0 rows.', since ? `(incremental since ${since})` : '(full fetch — DB may be empty or RLS blocking)');
     return [];
   }
   
