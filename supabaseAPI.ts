@@ -22,11 +22,13 @@ export const testConnection = async (): Promise<void> => {
 // v2.3.5: fetchAllOrders supports incremental sync via `since` (ISO timestamp)
 // When `since` is provided, returns only rows modified after that time → near-zero egress when nothing changed
 export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
-  // v2.3.5 Bis: select only scalar columns — no `data` JSONB to avoid Base64 photos/drawings in sync
-  // Full detail (photos, drawings, timeLogs) loaded on demand via fetchOrderDetail(id)
+  // v2.3.5 Bis: select(*) but strip heavy Base64 fields from row.data during mapping.
+  // This gives all scalar planning fields (requiredTasks, kbwDate, etc.) without crashing the UI,
+  // while avoiding egress from photos/timeLogs/drawings in the sync cycle.
+  // fetchOrderDetail(id) restores the stripped fields on demand when the user opens an order.
   let query = supabase
     .from('work_orders')
-    .select('id, order_number, opdrachtgever, project_ref, address, scheduled_date, scheduled_end_date, status, updated_at, assigned_worker, material, created_at, assignment_type')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (since) {
@@ -45,30 +47,36 @@ export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
     return [];
   }
   
-  console.log('📦 Orders received (lightweight):', data.length, 'rows', since ? `(incremental since ${since})` : '(full)');
+  console.log('📦 Orders received:', data.length, 'rows', since ? `(incremental since ${since})` : '(full)');
   
-  // Build lightweight WorkOrder objects from scalar columns only.
-  // photos[], timeLogs[], drawings[], description etc. are intentionally empty —
-  // fetchOrderDetail(id) hydrates them on demand when the user opens an order.
   const orders = (data || []).map((row: any, index: number) => {
     if (!row.id) { console.error(`❌ Order at index ${index} has no ID, skipping`); return null; }
+
+    // Strip heavy Base64 fields from the JSONB blob — they are loaded on demand via fetchOrderDetail(id)
+    const lightData = row.data && typeof row.data === 'object' ? { ...row.data } : {};
+    delete lightData.photos;
+    delete lightData.timeLogs;
+    delete lightData.drawings;
+
     return {
-      id: row.id,
-      orderNumber: row.order_number || '',
-      opdrachtgever: row.opdrachtgever || '',
-      projectRef: row.project_ref || '',
-      address: row.address || '',
-      scheduledDate: row.scheduled_date || '',
-      scheduledEndDate: row.scheduled_end_date || '',
-      material: row.material || '',
-      status: row.status || 'In afwachting',
-      createdAt: row.created_at || Date.now(),
-      assignedWorker: row.assigned_worker || '',
-      assignmentType: row.assignment_type || '',
-      updated_at: row.updated_at || '',
-      // Detail fields — empty until fetchOrderDetail() is called
-      hourBudget: { kbw: 0, plw: 0, wvb: 0, montage: 0, rvs: 0, reis: 0 },
-      photos: [], timeLogs: [], drawings: [], description: '', deliveryDate: '',
+      ...lightData,                                              // all planning fields from JSONB (requiredTasks, dates, hourBudget…)
+      id:              row.id,
+      orderNumber:     row.order_number     || lightData.orderNumber     || '',
+      opdrachtgever:   row.opdrachtgever    || lightData.opdrachtgever   || '',
+      projectRef:      row.project_ref      || lightData.projectRef      || '',
+      address:         row.address          || lightData.address         || '',
+      scheduledDate:   row.scheduled_date   || lightData.scheduledDate   || '',
+      scheduledEndDate:row.scheduled_end_date || lightData.scheduledEndDate || '',
+      material:        row.material         || lightData.material        || '',
+      status:          row.status           || lightData.status          || 'In afwachting',
+      createdAt:       row.created_at       || lightData.createdAt       || Date.now(),
+      assignedWorker:  row.assigned_worker  || lightData.assignedWorker  || '',
+      assignmentType:  row.assignment_type  || lightData.assignmentType  || '',
+      updated_at:      row.updated_at       || '',
+      // Heavy detail fields — empty stubs until fetchOrderDetail() is called
+      photos:    [],
+      timeLogs:  [],
+      drawings:  [],
     } as WorkOrder;
   }).filter((o): o is WorkOrder => o !== null);
   

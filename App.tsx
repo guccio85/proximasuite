@@ -214,9 +214,9 @@ const App: React.FC = () => {
   // --- Data Fetching (Supabase) ---
   const fetchData = async () => {
     const fetchStartTime = new Date().toISOString();
-    // v2.3.5 diagnostics — remove after confirming connection
-    await SupabaseAPI.testConnection();
     try {
+      // v2.3.5 diagnostics — safe, has internal try-catch, won't block loading
+      SupabaseAPI.testConnection(); // fire-and-forget, no await
       const data = await SupabaseAPI.fetchAllData();
       setOrders(data.orders || []);
       console.log('✅ Orders loaded from Supabase:', data.orders?.length || 0);
