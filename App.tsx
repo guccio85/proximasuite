@@ -281,7 +281,7 @@ const App: React.FC = () => {
   }, []);
 
   // --- REF FOR AUTO-SAVE & SYNC (Avoid Stale Closures) ---
-  const stateRef = useRef({ orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors });
+  const stateRef = useRef({ orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors, recurringAbsences });
   // v2.3.3: Protezione per-ordine — solo gli ordini in fase di salvataggio vengono esclusi dal sync
   const savingOrderIdsRef = useRef<Set<string>>(new Set());
   // Blocca TUTTO il sync solo durante salvataggi globali (saveData/saveAllData)
@@ -294,8 +294,8 @@ const App: React.FC = () => {
 
   // Update ref whenever state changes
   useEffect(() => {
-      stateRef.current = { orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors };
-  }, [orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors]);
+      stateRef.current = { orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors, recurringAbsences };
+  }, [orders, workers, workerPasswords, availabilities, globalDays, workLogs, companySettings, taskColors, recurringAbsences]);
 
   useEffect(() => { showWizardRef.current = showWizard; }, [showWizard]);
 
@@ -391,6 +391,11 @@ const App: React.FC = () => {
       if (JSON.stringify(serverWorkerPasswords) !== JSON.stringify(current.workerPasswords)) {
         setWorkerPasswords(serverWorkerPasswords);
         console.log('🔄 Password aggiornate da Supabase');
+      }
+      const serverRecurringAbsences = serverData.recurringAbsences || [];
+      if (JSON.stringify(serverRecurringAbsences) !== JSON.stringify(current.recurringAbsences)) {
+        setRecurringAbsences(serverRecurringAbsences);
+        console.log('🔄 Assenze ricorrenti aggiornate da Supabase');
       }
       if (serverData.settings) {
         if (Date.now() >= settingsProtectedUntilRef.current) {

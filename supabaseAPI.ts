@@ -916,26 +916,28 @@ export const deleteAllData = async (): Promise<boolean> => {
 
 export const saveAllRecurringAbsences = async (absences: RecurringAbsence[]): Promise<boolean> => {
   try {
-    // Delete all then re-insert
-    await supabase.from('recurring_absences').delete().neq('id', '');
-    if (absences.length > 0) {
-      const { error } = await supabase.from('recurring_absences').insert(
-        absences.map(a => ({
-          id: a.id,
-          worker: a.worker,
-          type: a.type,
-          time_of_day: a.timeOfDay,
-          day_of_week: a.dayOfWeek,
-          start_date: a.startDate,
-          number_of_weeks: a.numberOfWeeks,
-          note: a.note
-        }))
-      );
-      if (error) { console.error('Error saving recurring absences:', error); return false; }
+    console.log('💾 saveAllRecurringAbsences — count:', absences.length);
+    // Step 1: delete all existing rows
+    const { error: delError } = await supabase.from('recurring_absences').delete().not('id', 'is', null);
+    if (delError) { console.error('❌ Error deleting recurring absences:', delError); return false; }
+    // Step 2: insert new rows one by one (upsert avoids unique conflicts)
+    for (const a of absences) {
+      const { error } = await supabase.from('recurring_absences').upsert({
+        id: a.id,
+        worker: a.worker,
+        type: a.type,
+        time_of_day: a.timeOfDay,
+        day_of_week: a.dayOfWeek,
+        start_date: a.startDate,
+        number_of_weeks: a.numberOfWeeks,
+        note: a.note
+      });
+      if (error) { console.error('❌ Error upserting recurring absence:', a.id, error); }
     }
+    console.log('✅ Recurring absences saved to Supabase');
     return true;
   } catch (error) {
-    console.error('Error saving recurring absences:', error);
+    console.error('❌ saveAllRecurringAbsences exception:', error);
     return false;
   }
 };
