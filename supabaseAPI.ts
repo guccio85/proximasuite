@@ -5,11 +5,19 @@ import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, Globa
 // WORK ORDERS
 // ============================================
 
-export const fetchAllOrders = async (): Promise<WorkOrder[]> => {
-  const { data, error } = await supabase
+// v2.3.5: fetchAllOrders supports incremental sync via `since` (ISO timestamp)
+// When `since` is provided, returns only rows modified after that time → near-zero egress when nothing changed
+export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
+  let query = supabase
     .from('work_orders')
     .select('*')
     .order('created_at', { ascending: false });
+
+  if (since) {
+    query = query.gt('updated_at', since);
+  }
+
+  const { data, error } = await query;
   
   if (error) {
     console.error('❌ Error fetching orders from Supabase:', error);
@@ -122,6 +130,29 @@ export const saveOrder = async (order: WorkOrder): Promise<boolean> => {
     return false;
   }
   return true;
+};
+
+// v2.3.5: Lazy-load full order detail (with photos, drawings, timeLogs) only when user opens it
+export const fetchOrderDetail = async (orderId: string): Promise<WorkOrder | null> => {
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select('id, data, status, updated_at')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !data) {
+    console.error('❌ Error fetching order detail:', error);
+    return null;
+  }
+
+  if (data.data && typeof data.data === 'object') {
+    return {
+      ...data.data,
+      id: data.id,
+      status: data.status || data.data.status,
+    } as WorkOrder;
+  }
+  return null;
 };
 
 export const saveAllOrders = async (orders: WorkOrder[]): Promise<boolean> => {
@@ -807,10 +838,11 @@ export const saveWorkLog = async (log: WorkLog): Promise<boolean> => {
 // BULK SYNC (sostituisce /api/data)
 // ============================================
 
-export const fetchAllData = async () => {
+// v2.3.5: accepts `since` for incremental order sync
+export const fetchAllData = async (since?: string) => {
   try {
     const [ordersData, workersData, settingsData, availsData, absencesData, globalDaysData, workLogsData] = await Promise.all([
-      fetchAllOrders(),
+      fetchAllOrders(since),
       fetchAllWorkers(),
       fetchCompanySettings(),
       fetchAllAvailabilities(),

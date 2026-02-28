@@ -27,6 +27,7 @@ interface WerkplaatsViewProps {
   onSaveOrder?: (order: WorkOrder) => void; 
   onDeleteLog?: (orderId: string, logId: string) => void;
   onSaveOrderPhoto?: (orderId: string, photoBase64: string) => void;
+  onFetchOrderDetail?: (orderId: string) => Promise<WorkOrder | null>;
   language?: Language;
   departments?: Department[];
   mobilePermissions?: MobilePermissions;
@@ -34,7 +35,7 @@ interface WerkplaatsViewProps {
 }
 
 export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({ 
-    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, language = 'nl', departments = [], mobilePermissions, theme = 'gold'
+    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, onFetchOrderDetail, language = 'nl', departments = [], mobilePermissions, theme = 'gold'
 }) => {
   // DEBUG: Log departments to verify activities are loaded
   console.log('🔍 WerkplaatsView departments:', departments);
@@ -83,6 +84,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   // Media Viewer State
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
   const [viewingModel, setViewingModel] = useState<string | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Ridimensiona e comprime un'immagine prima di salvarla come base64
@@ -323,6 +325,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                   <button onClick={() => { setSelectedOrderForLog(null); resetLogForm(); }} className={`p-2 rounded-full border transition-colors ${selectedTheme === 'light' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 border-blue-300' : selectedTheme === 'gold' ? 'bg-[#0a0a0a] text-[#d4af37] hover:bg-[#d4af37]/20 border-[#d4af37]/30' : 'bg-[#0a0a0a] text-[#00f2fe] hover:bg-[#00f2fe]/20 border-[#00f2fe]/30'}`}><ChevronLeft size={24} /></button>
                   <div className="overflow-hidden flex-1">
                       <h2 className={`font-black text-xl ${selectedTheme === 'gold' ? 'text-[#d4af37]' : selectedTheme === 'space' ? 'text-[#ffffff]' : 'text-blue-900'} truncate tracking-tight drop-shadow-sm`}>{order.orderNumber}</h2>
+                      {isLoadingDetail && <p className="text-[10px] text-gray-500 animate-pulse mt-0.5">...</p>}
                   </div>
                   {!reportReadyMode ? <button onClick={() => setReportReadyMode(true)} className={`bg-gradient-to-r ${selectedTheme === 'gold' ? 'from-[#d4af37] to-[#aa8c2c] text-[#0a0a0a] shadow-[0_4px_10px_rgba(212,175,55,0.3)]' : selectedTheme === 'space' ? 'from-[#00f2fe] to-[#4facfe] text-[#020617] shadow-[0_4px_10px_rgba(0,242,254,0.3)]' : 'from-blue-500 to-blue-600 text-white shadow-[0_4px_10px_rgba(59,130,246,0.3)]'} p-2.5 rounded-full hover:scale-105 transition-transform`}><CheckCircle size={18} /></button> : <div className="w-10"></div>}
               </header>
@@ -501,7 +504,19 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
              </div>
          ) : (
              filteredOrders.map(order => (
-                 <div key={order.id} onClick={() => { setSelectedOrderForLog(order); resetLogForm(); }} className={`${selectedTheme === 'light' ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-400' : 'bg-[#141414]/90 backdrop-blur-xl'} p-4 rounded-[1.5rem] ${selectedTheme === 'gold' ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-[#d4af37]/20 hover:border-[#d4af37]/50' : selectedTheme === 'space' ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-[#00f2fe]/20 hover:border-[#00f2fe]/50' : 'shadow-[0_4px_15px_rgba(59,130,246,0.2)] border-blue-200'} active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group border`}>
+                 <div key={order.id} onClick={async () => {
+                   if (onFetchOrderDetail) {
+                     setIsLoadingDetail(true);
+                     try {
+                       const detail = await onFetchOrderDetail(order.id);
+                       setSelectedOrderForLog(detail || order);
+                     } catch { setSelectedOrderForLog(order); }
+                     finally { setIsLoadingDetail(false); }
+                   } else {
+                     setSelectedOrderForLog(order);
+                   }
+                   resetLogForm();
+                 }} className={`${selectedTheme === 'light' ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-400' : 'bg-[#141414]/90 backdrop-blur-xl'} p-4 rounded-[1.5rem] ${selectedTheme === 'gold' ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-[#d4af37]/20 hover:border-[#d4af37]/50' : selectedTheme === 'space' ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-[#00f2fe]/20 hover:border-[#00f2fe]/50' : 'shadow-[0_4px_15px_rgba(59,130,246,0.2)] border-blue-200'} active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group border`}>
                      {order.readyForArchive && <div className={`absolute right-0 top-0 bg-gradient-to-r ${selectedTheme === 'gold' ? 'from-[#d4af37] to-[#aa8c2c] text-[#0a0a0a] border-[#d4af37]' : selectedTheme === 'space' ? 'from-[#00f2fe] to-[#4facfe] text-[#020617] border-[#00f2fe]' : 'from-blue-400 to-blue-600 text-white border-blue-500'} px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-bl-2xl z-10 shadow-sm border-b border-l`}>{t('report_ready')}</div>}
 
                      <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-// App.tsx v2.3.3 — Smart per-order sync protection (savingOrderIdsRef)
+// App.tsx v2.3.5 — Incremental sync + lazy-load order detail to reduce Supabase egress
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LayoutGrid, Minimize, Maximize, Tv, Calendar as CalendarIcon, X, Check, FileText, Loader2, Save, Printer, Plus, Minus, AlertCircle } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -269,6 +269,8 @@ const App: React.FC = () => {
   const showWizardRef = useRef(false);
   // Blocca la sync di company_settings per 15s dopo ogni salvataggio manuale
   const settingsProtectedUntilRef = useRef(0);
+  // v2.3.5: Incrementale - traccia l'ultimo timestamp di sync per scaricare solo ordini modificati
+  const lastSyncTimestampRef = useRef<string>(''); // stringa vuota = primo sync completo
 
   // Update ref whenever state changes
   useEffect(() => {
@@ -281,9 +283,11 @@ const App: React.FC = () => {
   const syncDataIncremental = async () => {
     // Non sovrascrivere dati durante un salvataggio globale o durante il wizard
     if (isSavingGlobalRef.current || showWizardRef.current) return;
+    const fetchStartTime = new Date().toISOString(); // v2.3.5: prima del fetch per non perdere scritture concorrenti
+    const since = lastSyncTimestampRef.current || undefined;
     try {
       setIsSyncing(true);
-      const serverData = await SupabaseAPI.fetchAllData();
+      const serverData = await SupabaseAPI.fetchAllData(since);
 
       const current = stateRef.current;
       const serverOrders: WorkOrder[] = serverData.orders || [];
@@ -292,23 +296,40 @@ const App: React.FC = () => {
       const serverWorkLogs = serverData.workLogs || [];
       const serverWorkerPasswords = serverData.workerPasswords || {};
 
-      // v2.3.3: Smart merge — aggiorna tutti gli ordini DAL SERVER, ma preserva quelli in fase di edit locale
-      if (savingOrderIdsRef.current.size > 0) {
-        const mergedOrders = serverOrders.map(serverOrder => {
-          if (savingOrderIdsRef.current.has(serverOrder.id)) {
-            // Preserva la versione locale dell'ordine in fase di salvataggio
-            const localOrder = current.orders.find(o => o.id === serverOrder.id);
-            return localOrder || serverOrder;
-          }
-          return serverOrder;
+      // v2.3.5: Merge incrementale ordini
+      if (!since) {
+        // Primo sync completo: applica smart merge per protezione per-ordine
+        if (savingOrderIdsRef.current.size > 0) {
+          const mergedOrders = serverOrders.map(serverOrder => {
+            if (savingOrderIdsRef.current.has(serverOrder.id)) {
+              const localOrder = current.orders.find(o => o.id === serverOrder.id);
+              return localOrder || serverOrder;
+            }
+            return serverOrder;
+          });
+          const serverIds = new Set(serverOrders.map(o => o.id));
+          const newLocalOrders = current.orders.filter(o => savingOrderIdsRef.current.has(o.id) && !serverIds.has(o.id));
+          setOrders([...mergedOrders, ...newLocalOrders]);
+        } else {
+          setOrders(serverOrders);
+        }
+      } else if (serverOrders.length > 0) {
+        // Sync incrementale: solo ordini modificati — merge nel locale
+        const mergedOrders = current.orders.map(localOrder => {
+          if (savingOrderIdsRef.current.has(localOrder.id)) return localOrder; // preserva ordini in salvataggio
+          const serverVersion = serverOrders.find(s => s.id === localOrder.id);
+          return serverVersion || localOrder;
         });
-        // Aggiungi eventuali ordini locali nuovi non ancora sul server
-        const serverIds = new Set(serverOrders.map(o => o.id));
-        const newLocalOrders = current.orders.filter(o => savingOrderIdsRef.current.has(o.id) && !serverIds.has(o.id));
-        setOrders([...mergedOrders, ...newLocalOrders]);
-      } else {
-        setOrders(serverOrders);
+        // Aggiungi nuovi ordini non ancora in stato locale
+        const localIds = new Set(current.orders.map(o => o.id));
+        const newOrders = serverOrders.filter(o => !localIds.has(o.id));
+        setOrders([...mergedOrders, ...newOrders]);
       }
+      // else: since impostato AND serverOrders vuoto → niente è cambiato, mantieni stato locale
+
+      // Aggiorna timestamp per il prossimo sync incrementale
+      lastSyncTimestampRef.current = fetchStartTime;
+
       setLastSyncTime(Date.now());
       if (JSON.stringify(serverWorkers) !== JSON.stringify(current.workers)) {
         setWorkers(serverWorkers);
@@ -326,9 +347,7 @@ const App: React.FC = () => {
         setWorkerPasswords(serverWorkerPasswords);
         console.log('🔄 Password aggiornate da Supabase');
       }
-      // Merge workerContacts (già inclusi in serverData.settings da fetchAllData)
       if (serverData.settings) {
-        // Non sovrascrivere le impostazioni se l'utente ha appena salvato (finestra di 15s)
         if (Date.now() >= settingsProtectedUntilRef.current) {
           const serverSettingsStr = JSON.stringify(serverData.settings);
           const currentSettingsStr = JSON.stringify(current.companySettings);
@@ -460,8 +479,14 @@ const App: React.FC = () => {
       setIsAddOrderModalOpen(true);
   };
 
-  const handleEditOrderClick = (order: WorkOrder) => {
-      setSelectedOrderForEdit(order);
+  // v2.3.5: lazy-load dettaglio completo prima di aprire il modale (foto, disegni, timeLogs)
+  const handleEditOrderClick = async (order: WorkOrder) => {
+      try {
+          const detail = await SupabaseAPI.fetchOrderDetail(order.id);
+          setSelectedOrderForEdit(detail || order);
+      } catch {
+          setSelectedOrderForEdit(order);
+      }
       setIsAddOrderModalOpen(true);
   };
 
@@ -1395,6 +1420,7 @@ const App: React.FC = () => {
                       try { if (orderToSave) await SupabaseAPI.saveOrder(orderToSave); } finally { setTimeout(() => { savingOrderIdsRef.current.delete(orderId); }, 2000); }
               }}
               onSaveOrderPhoto={handleSaveOrderPhoto}
+              onFetchOrderDetail={async (orderId) => SupabaseAPI.fetchOrderDetail(orderId)}
               language={currentLang}
               departments={companySettings?.departments}
               mobilePermissions={companySettings?.mobilePermissions}
