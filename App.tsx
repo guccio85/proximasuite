@@ -1,4 +1,4 @@
-// App.tsx v2.3.5 — Incremental sync + lazy-load order detail to reduce Supabase egress
+// App.tsx v2.4.0 — Capacitor mobile support + multi-language (NL/IT/PL/EN) + incremental sync
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LayoutGrid, Minimize, Maximize, Tv, Calendar as CalendarIcon, X, Check, FileText, Loader2, Save, Printer, Plus, Minus, AlertCircle } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -13,6 +13,14 @@ import { AddOrderModal } from './components/AddOrderModal';
 import { SetupWizard } from './components/SetupWizard';
 import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact } from './types';
 import * as SupabaseAPI from './supabaseAPI';
+
+// Capacitor native platform detection (no-op on web if package not installed)
+let isNativeApp = false;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { Capacitor } = require('@capacitor/core');
+  isNativeApp = Capacitor.isNativePlatform();
+} catch { /* running on web — Capacitor not available */ }
 
 // Default Task Colors
 const initialTaskColors: TaskColors = {
@@ -106,6 +114,33 @@ const TRANSLATIONS = {
     lineThickness: 'Spessore Linee',
     fontSize: 'Dimensione Testo',
     formSize: 'Dimensione Modulo'
+  },
+  pl: {
+    dashboardTitle: 'Przegląd Planowania',
+    archiveTitle: 'Archiwum Zleceń',
+    show_completed: 'Pokaż ukończone',
+    dayConfig: 'Konfiguruj Dzień',
+    selectStatus: 'Wybierz status dla:',
+    markHoliday: 'Oznacz jako Święto',
+    markAdv: 'Oznacz jako Dzień ADV',
+    resetDay: 'Przywróć Dzień Roboczy',
+    fullScreen: 'Pełny Ekran (Ukryj Pasek)',
+    tvMode: 'Otwórz w Nowym Oknie (TV)',
+    printReportTitle: 'Raport Dzienny Godzin',
+    printDept: 'Dział',
+    printActivity: 'Aktywność',
+    printHours: 'Godziny',
+    printWorker: 'Pracownik',
+    printTotalHours: 'Łączne Godziny',
+    printGenerated: 'Wygenerowano',
+    save: 'Zapisz',
+    saved: 'Dane Zapisane!',
+    showDisplaySettings: 'Pokaż Ustawienia Wyświetlania',
+    hideDisplaySettings: 'Ukryj Ustawienia Wyświetlania',
+    rowHeight: 'Wysokość Wiersza',
+    lineThickness: 'Grubość Linii',
+    fontSize: 'Rozmiar Czcionki',
+    formSize: 'Rozmiar Formularza'
   }
 };
 
@@ -132,8 +167,13 @@ const App: React.FC = () => {
   const [uiFontSize, setUiFontSize] = useState(14);
   const [taskColors, setTaskColors] = useState<TaskColors>(initialTaskColors);
   
-  // --- Language State ---
-  const [currentLang, setCurrentLang] = useState<Language>('nl');
+  // --- Language State (persisted in localStorage) ---
+  const [currentLang, setCurrentLang] = useState<Language>(() => {
+    try { return (localStorage.getItem('snep_lang') as Language) || 'nl'; } catch { return 'nl'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('snep_lang', currentLang); } catch {}
+  }, [currentLang]);
 
   // --- UI State ---
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -758,7 +798,9 @@ const App: React.FC = () => {
   });
 
   // Allow a simplified mobile entrypoint via QR (e.g. http://host:port/?view=mobile)
-  const urlView = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('view') : null;
+  // On native Capacitor app, always force werkplaats view
+  const urlViewRaw = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('view') : null;
+  const urlView = isNativeApp ? 'werkplaats' : urlViewRaw;
   
   // DEBUG: Log URL routing decisions
   if (typeof window !== 'undefined' && urlView) {

@@ -12,7 +12,7 @@ export type UserRole = 'admin' | 'user' | null;
 
 export type GlobalDayType = 'HOLIDAY' | 'ADV';
 
-export type Language = 'nl' | 'en' | 'it';
+export type Language = 'nl' | 'en' | 'it' | 'pl';
 
 export interface TimeLog {
   id: string;
