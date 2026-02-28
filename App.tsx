@@ -13,14 +13,10 @@ import { AddOrderModal } from './components/AddOrderModal';
 import { SetupWizard } from './components/SetupWizard';
 import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact } from './types';
 import * as SupabaseAPI from './supabaseAPI';
+import { Capacitor } from '@capacitor/core';
 
-// Capacitor native platform detection (no-op on web if package not installed)
-let isNativeApp = false;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { Capacitor } = require('@capacitor/core');
-  isNativeApp = Capacitor.isNativePlatform();
-} catch { /* running on web — Capacitor not available */ }
+// True when running inside the native Android/iOS Capacitor app
+const isNativeApp = Capacitor.isNativePlatform();
 
 // Default Task Colors
 const initialTaskColors: TaskColors = {
