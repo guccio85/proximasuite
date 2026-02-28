@@ -818,29 +818,23 @@ const App: React.FC = () => {
 
     const absencesForToday = getAbsencesForToday();
     
-    // Collect all order data with logs from today
-    const reportData = orders
-      .map((order) => {
-        const todayLogs = (order.timeLogs || []).filter((log: any) => log.date === today);
-        if (todayLogs.length === 0) return null;
-        return { order, logs: todayLogs };
-      })
-      .filter(Boolean);
+    // Use flat workLogs state (work_logs table) — orders have timeLogs:[] due to lazy loading
+    const todayWorkLogs = workLogs.filter(log => log.date === today);
 
     // Group by worker
-    const workerSummary: Record<string, {category: string; activity: string; hours: number}[]> = {};
+    const workerSummary: Record<string, {orderNum: string; category: string; activity: string; hours: number}[]> = {};
     let totalHours = 0;
 
-    reportData.forEach((item: any) => {
-      item.logs.forEach((log: any) => {
-        if (!workerSummary[log.worker]) workerSummary[log.worker] = [];
-        workerSummary[log.worker].push({
-          category: log.category || 'N/A',
-          activity: log.activity || 'N/A',
-          hours: log.hours
-        });
-        totalHours += log.hours;
+    todayWorkLogs.forEach((log) => {
+      if (!workerSummary[log.worker]) workerSummary[log.worker] = [];
+      const relatedOrder = orders.find(o => o.id === log.orderId);
+      workerSummary[log.worker].push({
+        orderNum: relatedOrder?.orderNumber || log.orderId,
+        category: log.category || 'N/A',
+        activity: log.activity || 'N/A',
+        hours: log.hours
       });
+      totalHours += log.hours;
     });
 
     // Create HTML for printing with language-aware strings
@@ -899,12 +893,14 @@ const App: React.FC = () => {
             ${entries.length > 0 ? `
               <table>
                 <tr>
+                  <th>${currentLang === 'it' ? 'Ordine' : currentLang === 'en' ? 'Order' : 'Order'}</th>
                   <th>${t.printDept}</th>
                   <th>${t.printActivity}</th>
                   <th>${t.printHours}</th>
                 </tr>
                 ${entries.map((e: any) => `
                   <tr>
+                    <td>${e.orderNum}</td>
                     <td>${e.category}</td>
                     <td>${e.activity}</td>
                     <td>${e.hours}</td>

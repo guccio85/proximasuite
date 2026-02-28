@@ -276,7 +276,13 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       );
   }
 
-  const currentOrderLive = orders.find(o => o.id === selectedOrderForLog?.id) || selectedOrderForLog;
+  // Merge live order data with full detail (timeLogs/photos/drawings are lazy-loaded)
+  const lightOrder = orders.find(o => o.id === selectedOrderForLog?.id);
+  const currentOrderLive = selectedOrderForLog
+    ? lightOrder
+      ? { ...lightOrder, timeLogs: selectedOrderForLog.timeLogs ?? [], photos: selectedOrderForLog.photos ?? [], drawings: selectedOrderForLog.drawings ?? [] }
+      : selectedOrderForLog
+    : null;
 
   // --- ORDER DETAILS SCREEN (THEMED) ---
   if (currentOrderLive) {
