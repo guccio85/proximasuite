@@ -45,7 +45,13 @@ const TRANSLATIONS = {
     printHours: 'Uren',
     printWorker: 'Werknemer',
     printTotalHours: 'Totaal Uren Ingelogd',
-    printGenerated: 'Gegenereerd'
+    printGenerated: 'Gegenereerd',
+    showDisplaySettings: 'Toon Weergave Instellingen',
+    hideDisplaySettings: 'Verberg Weergave Instellingen',
+    rowHeight: 'Rijhoogte',
+    lineThickness: 'Lijndikte',
+    fontSize: 'Lettergrootte',
+    formSize: 'Formulier Grootte'
   },
   en: {
     dashboardTitle: 'Planning Overview',
@@ -66,7 +72,13 @@ const TRANSLATIONS = {
     printHours: 'Hours',
     printWorker: 'Worker',
     printTotalHours: 'Total Logged Hours',
-    printGenerated: 'Generated'
+    printGenerated: 'Generated',
+    showDisplaySettings: 'Show Display Settings',
+    hideDisplaySettings: 'Hide Display Settings',
+    rowHeight: 'Row Height',
+    lineThickness: 'Line Thickness',
+    fontSize: 'Font Size',
+    formSize: 'Form Size'
   },
   it: {
     dashboardTitle: 'Panoramica Planning',
@@ -87,7 +99,13 @@ const TRANSLATIONS = {
     printTotalHours: 'Ore Totali Registrate',
     printGenerated: 'Generato',
     save: 'Salva',
-    saved: 'Dati Salvati!'
+    saved: 'Dati Salvati!',
+    showDisplaySettings: 'Mostra Impostazioni Visualizzazione',
+    hideDisplaySettings: 'Nascondi Impostazioni Visualizzazione',
+    rowHeight: 'Altezza Righe',
+    lineThickness: 'Spessore Linee',
+    fontSize: 'Dimensione Testo',
+    formSize: 'Dimensione Modulo'
   }
 };
 
@@ -1031,7 +1049,7 @@ const App: React.FC = () => {
                                           : 'bg-[#0f172a]/50 text-[#00f2fe]/60 border border-[#00f2fe]/20 hover:bg-[#00f2fe]/10'
                               }`}
                           >
-                              {showRowHeightSlider ? 'Hide Display Settings' : 'Show Display Settings'}
+                              {showRowHeightSlider ? t.hideDisplaySettings : t.showDisplaySettings}
                           </button>
 
                           {/* Display Settings - Conditional */}
@@ -1041,7 +1059,7 @@ const App: React.FC = () => {
                                   {/* Row Height Slider */}
                                   <div className="flex items-center gap-3">
                                       <span className={`text-sm font-semibold w-24 ${theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}`}>
-                                          Row Height:
+                                          {t.rowHeight}:
                                       </span>
                                       <button 
                                           onClick={() => setRowHeightMultiplier(Math.max(0.6, rowHeightMultiplier - 0.1))}
@@ -1082,7 +1100,7 @@ const App: React.FC = () => {
                                   {/* Grid Line Thickness Slider */}
                                   <div className="flex items-center gap-3">
                                       <span className={`text-sm font-semibold w-24 ${theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}`}>
-                                          Line Thickness:
+                                          {t.lineThickness}:
                                       </span>
                                       <button 
                                           onClick={() => setGridLineThickness(Math.max(1, gridLineThickness - 1))}
@@ -1120,7 +1138,7 @@ const App: React.FC = () => {
                                   {/* Font Size Slider */}
                                   <div className="flex items-center gap-3">
                                       <span className={`text-sm font-semibold w-24 ${theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}`}>
-                                          Font Size:
+                                          {t.fontSize}:
                                       </span>
                                       <button 
                                           onClick={() => setCardFontSizeMultiplier(Math.max(0.5, cardFontSizeMultiplier - 0.1))}
@@ -1161,7 +1179,7 @@ const App: React.FC = () => {
                                   {/* Form Font Size Slider */}
                                   <div className="flex items-center gap-2 flex-wrap">
                                       <span className={`text-xs font-mono flex-shrink-0 ${theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}`}>
-                                          Form Size:
+                                          {t.formSize}:
                                       </span>
                                       <button 
                                           onClick={() => setFormFontSizeMultiplier(Math.max(0.5, formFontSizeMultiplier - 0.1))}
