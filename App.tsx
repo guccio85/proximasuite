@@ -667,20 +667,21 @@ const App: React.FC = () => {
 
   const handleUpdateContacts = async (contacts: Record<string, WorkerContact>) => {
             if (!companySettings) return;
-            const updated = { ...companySettings, workerContacts: contacts };
-            setCompanySettings(updated);
-            // Salva i contatti anche nella tabella workers
+            // Use functional update to avoid racing with onUpdateRates (stale-closure safe)
+            setCompanySettings(prev => {
+                const updated = { ...(prev || companySettings), workerContacts: contacts };
+                SupabaseAPI.saveCompanySettings(updated).catch(console.error);
+                return updated;
+            });
+            // Save contacts in workers table (source of truth for contact_data)
             for (const [name, contactData] of Object.entries(contacts)) {
                 await SupabaseAPI.saveWorker(name, workerPasswords[name] || undefined, contactData);
             }
-            await SupabaseAPI.saveCompanySettings(updated);
             settingsProtectedUntilRef.current = Date.now() + 15000;
-
-            // Ricarica i dati aggiornati da Supabase per evitare desincronizzazioni
+            // Reload workers/passwords only — do NOT override workerContacts (fetchAllWorkers returns {} by design)
             const workersData = await SupabaseAPI.fetchAllWorkers();
             setWorkers(workersData.workers || []);
             setWorkerPasswords(workersData.workerPasswords || {});
-            setCompanySettings(prev => prev ? { ...prev, workerContacts: workersData.workerContacts } : prev);
   };
 
   const handleOpenTvWindow = () => {
@@ -1340,9 +1341,12 @@ const App: React.FC = () => {
                           onUpdateContacts={handleUpdateContacts}
                           workerRates={companySettings?.workerRates || {}}
                           onUpdateRates={(rates) => {
-                              const updated = { ...companySettings, workerRates: rates } as CompanySettings;
-                              setCompanySettings(updated);
-                              SupabaseAPI.saveCompanySettings(updated);
+                              // Functional update avoids stale-closure overwrite of contacts/other fields
+                              setCompanySettings(prev => {
+                                  const updated = { ...(prev || {}), workerRates: rates } as CompanySettings;
+                                  SupabaseAPI.saveCompanySettings(updated);
+                                  return updated;
+                              });
                           }}
                           language={currentLang}
                       />
