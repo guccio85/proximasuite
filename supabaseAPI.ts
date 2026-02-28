@@ -914,6 +914,32 @@ export const deleteAllData = async (): Promise<boolean> => {
   }
 };
 
+export const saveAllRecurringAbsences = async (absences: RecurringAbsence[]): Promise<boolean> => {
+  try {
+    // Delete all then re-insert
+    await supabase.from('recurring_absences').delete().neq('id', '');
+    if (absences.length > 0) {
+      const { error } = await supabase.from('recurring_absences').insert(
+        absences.map(a => ({
+          id: a.id,
+          worker: a.worker,
+          type: a.type,
+          time_of_day: a.timeOfDay,
+          day_of_week: a.dayOfWeek,
+          start_date: a.startDate,
+          number_of_weeks: a.numberOfWeeks,
+          note: a.note
+        }))
+      );
+      if (error) { console.error('Error saving recurring absences:', error); return false; }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving recurring absences:', error);
+    return false;
+  }
+};
+
 export const saveAllData = async (data: {
   orders?: WorkOrder[];
   workers?: string[];
@@ -922,6 +948,7 @@ export const saveAllData = async (data: {
   globalDays?: GlobalDay[];
   workLogs?: WorkLog[];
   settings?: CompanySettings;
+  recurringAbsences?: RecurringAbsence[];
 }) => {
   try {
     const promises = [];
@@ -929,6 +956,7 @@ export const saveAllData = async (data: {
     if (data.orders) promises.push(saveAllOrders(data.orders));
     if (data.settings) promises.push(saveCompanySettings(data.settings));
     if (data.availabilities) promises.push(saveAllAvailabilities(data.availabilities));
+    if (data.recurringAbsences !== undefined) promises.push(saveAllRecurringAbsences(data.recurringAbsences));
     // Workers e gli altri vengono salvati individualmente tramite le loro funzioni
 
     await Promise.all(promises);

@@ -466,7 +466,9 @@ const App: React.FC = () => {
               availabilities: updatedData.availabilities || availabilities,
               globalDays: updatedData.globalDays || globalDays, 
               workLogs: updatedData.workLogs || workLogs,
-              settings: shouldSaveSettings ? currentSettings : undefined
+              settings: shouldSaveSettings ? currentSettings : undefined,
+              // Only send recurringAbsences when explicitly updated (avoids unnecessary egress)
+              recurringAbsences: 'recurringAbsences' in updatedData ? updatedData.recurringAbsences : undefined
           });
           console.log('💾 Data saved to Supabase');
       } catch (e) {
