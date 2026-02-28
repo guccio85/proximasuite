@@ -384,14 +384,14 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
 
 // v2.3.5 Bis: Load company logo once at startup — NOT included in 4-second sync cycle
 export const fetchCompanyLogo = async (): Promise<string | undefined> => {
+  // logo_url column does not exist in schema — logo is stored inside mobile_permissions JSONB as __logoUrl
   const { data, error } = await supabase
     .from('company_settings')
-    .select('logo_url, mobile_permissions')
+    .select('mobile_permissions')
     .eq('id', 'default')
     .single();
   if (error || !data) return undefined;
-  const legacyLogo = ((data as any).mobile_permissions as any)?.__logoUrl;
-  return (data as any).logo_url || legacyLogo || undefined;
+  return ((data as any).mobile_permissions as any)?.__logoUrl || undefined;
 };
 
 // ============================================
