@@ -721,7 +721,18 @@ const App: React.FC = () => {
   };
 
   // Derived state
-  const sortedOrders = [...orders].sort((a, b) => (a.scheduledDate || '').localeCompare(b.scheduledDate || ''));
+  // Sort: 1) group by client (opdrachtgever alphabetical), 2) within same client earliest end/delivery date first
+  const sortedOrders = [...orders].sort((a, b) => {
+    const clientA = (a.opdrachtgever || '').toLowerCase();
+    const clientB = (b.opdrachtgever || '').toLowerCase();
+    if (clientA !== clientB) return clientA.localeCompare(clientB);
+    // Same client → sort by earliest of scheduledEndDate / deliveryDate
+    const getEarliestEnd = (o: typeof a) => {
+      const dates = [o.scheduledEndDate, o.deliveryDate].filter(Boolean) as string[];
+      return dates.length > 0 ? dates.sort()[0] : '9999-99-99';
+    };
+    return getEarliestEnd(a).localeCompare(getEarliestEnd(b));
+  });
 
   // Allow a simplified mobile entrypoint via QR (e.g. http://host:port/?view=mobile)
   const urlView = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('view') : null;
