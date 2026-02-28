@@ -8,10 +8,11 @@ import { StatisticsView } from './components/StatisticsView';
 import { WorkerManager } from './components/WorkerManager';
 import { TeamSchedule } from './components/TeamSchedule';
 import { WerkplaatsView } from './components/WerkplaatsView';
+import { CostsView } from './components/CostsView';
 import { SubcontractorDirectory } from './components/SubcontractorDirectory';
 import { AddOrderModal } from './components/AddOrderModal'; 
 import { SetupWizard } from './components/SetupWizard';
-import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact } from './types';
+import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact, PurchaseInvoice } from './types';
 import * as SupabaseAPI from './supabaseAPI';
 import { Capacitor } from '@capacitor/core';
 
@@ -153,6 +154,7 @@ const App: React.FC = () => {
   const [recurringAbsences, setRecurringAbsences] = useState<RecurringAbsence[]>([]);
   const [globalDays, setGlobalDays] = useState<GlobalDay[]>([]);
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
   
   // --- Settings State (Null by default for White Label) ---
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
@@ -284,6 +286,7 @@ const App: React.FC = () => {
       setRecurringAbsences(data.recurringAbsences || []);
       setGlobalDays(data.globalDays || []); 
       setWorkLogs(data.workLogs || []);
+      setPurchaseInvoices(data.purchaseInvoices || []);
       
       // Load Settings
       if (data.settings) {
@@ -439,6 +442,10 @@ const App: React.FC = () => {
       if (JSON.stringify(serverWorkLogs) !== JSON.stringify(current.workLogs)) {
         setWorkLogs(serverWorkLogs);
         console.log('🔄 Ore aggiornate da Supabase');
+      }
+      const serverInvoices = serverData.purchaseInvoices || [];
+      if (JSON.stringify(serverInvoices) !== JSON.stringify(purchaseInvoices)) {
+        setPurchaseInvoices(serverInvoices);
       }
       if (JSON.stringify(serverWorkerPasswords) !== JSON.stringify(current.workerPasswords)) {
         setWorkerPasswords(serverWorkerPasswords);
@@ -1331,6 +1338,12 @@ const App: React.FC = () => {
                           onDelete={handleWorkerDelete}
                           onUpdatePassword={handleUpdatePassword}
                           onUpdateContacts={handleUpdateContacts}
+                          workerRates={companySettings?.workerRates || {}}
+                          onUpdateRates={(rates) => {
+                              const updated = { ...companySettings, workerRates: rates } as CompanySettings;
+                              setCompanySettings(updated);
+                              SupabaseAPI.saveCompanySettings(updated);
+                          }}
                           language={currentLang}
                       />
                   </div>
@@ -1376,6 +1389,32 @@ const App: React.FC = () => {
                               try { await SupabaseAPI.updateWorkLog(logId, hours, note); } catch (e) { console.error('updateWorkLog failed:', e); }
                           }}
                           adminPassword={companySettings?.adminPassword}
+                          theme={theme}
+                          purchaseInvoices={purchaseInvoices}
+                          workerRates={companySettings?.workerRates || {}}
+                      />
+                  </div>
+              );
+          case 'costs':
+              return (
+                  <div className="p-8 h-full overflow-y-auto">
+                      <CostsView
+                          orders={orders}
+                          purchaseInvoices={purchaseInvoices}
+                          onAddInvoice={(inv) => {
+                              setPurchaseInvoices(prev => [...prev, inv]);
+                              SupabaseAPI.savePurchaseInvoice(inv);
+                          }}
+                          onUpdateInvoice={(inv) => {
+                              setPurchaseInvoices(prev => prev.map(i => i.id === inv.id ? inv : i));
+                              SupabaseAPI.savePurchaseInvoice(inv);
+                          }}
+                          onDeleteInvoice={(id) => {
+                              setPurchaseInvoices(prev => prev.filter(i => i.id !== id));
+                              SupabaseAPI.deletePurchaseInvoice(id);
+                          }}
+                          adminPassword={companySettings?.adminPassword}
+                          language={currentLang}
                           theme={theme}
                       />
                   </div>

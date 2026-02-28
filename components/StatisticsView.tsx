@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { WorkOrder, WorkLog, Language, TaskColors } from '../types';
-import { BarChart3, Clock, PieChart, Layers, TrendingUp, List, Trash2, Edit2, Check, X, Lock, Filter, Building2, FileText, Info, Hexagon } from 'lucide-react';
+import { WorkOrder, WorkLog, PurchaseInvoice, Language, TaskColors } from '../types';
+import { BarChart3, Clock, PieChart, Layers, TrendingUp, List, Trash2, Edit2, Check, X, Lock, Filter, Building2, FileText, Info, Hexagon, Euro, Receipt } from 'lucide-react';
 
 interface StatisticsViewProps {
   orders: WorkOrder[];
   workLogs?: WorkLog[];
+  purchaseInvoices?: PurchaseInvoice[];
+  workerRates?: Record<string, number>;
   taskColors: TaskColors;
   language?: Language;
   onDeleteLog?: (orderId: string, logId: string) => void;
@@ -14,7 +16,7 @@ interface StatisticsViewProps {
 }
 
 export const StatisticsView: React.FC<StatisticsViewProps> = ({ 
-    orders, workLogs = [], taskColors, language = 'nl', onDeleteLog, onUpdateLog, adminPassword, theme = 'gold' 
+    orders, workLogs = [], purchaseInvoices = [], workerRates = {}, taskColors, language = 'nl', onDeleteLog, onUpdateLog, adminPassword, theme = 'gold' 
 }) => {
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editHours, setEditHours] = useState('');
@@ -22,8 +24,9 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
   const [passwordPrompt, setPasswordPrompt] = useState<{ action: 'edit' | 'delete', orderId: string, logId: string } | null>(null);
   const [passInput, setPassInput] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<'hours' | 'costs'>('hours');
 
-  const VERSION = "v2.3.5";
+  const VERSION = "v2.4.0";
 
   const t = (key: string) => {
       const dict: Record<string, Record<string, string>> = {
@@ -53,7 +56,19 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
               confirm: "Bevestigen",
               no_logs: "Geen logs gevonden voor deze selectie.",
               realization: "Budget vs Realisatie",
-              wrong_password_alert: "Wachtwoord Onjuist!"
+              wrong_password_alert: "Wachtwoord Onjuist!",
+              cost_analysis: "Kostenanalyse & Marge",
+              labor_cost: "Arbeidskosten",
+              purchase_cost: "Inkoop Kosten",
+              total_cost: "Totale Kosten",
+              contract_value: "Opdrachtwaarde",
+              margin: "Marge",
+              cost_breakdown: "Kosten Verdeling",
+              no_rates: "Geen uurtarieven ingesteld voor werknemers.",
+              no_order_value: "Geen opdrachtwaarde ingesteld.",
+              labor: "Arbeid",
+              purchases: "Inkoop",
+              profit: "Winst"
           },
           en: {
               title: "Time Stats & Budget",
@@ -81,7 +96,19 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
               confirm: "Confirm",
               no_logs: "No logs found for this selection.",
               realization: "Budget vs Realization",
-              wrong_password_alert: "Wrong Password!"
+              wrong_password_alert: "Wrong Password!",
+              cost_analysis: "Cost Analysis & Margin",
+              labor_cost: "Labor Costs",
+              purchase_cost: "Purchase Costs",
+              total_cost: "Total Costs",
+              contract_value: "Contract Value",
+              margin: "Margin",
+              cost_breakdown: "Cost Breakdown",
+              no_rates: "No hourly rates set for workers.",
+              no_order_value: "No contract value set.",
+              labor: "Labor",
+              purchases: "Purchases",
+              profit: "Profit"
           },
           it: {
               title: "Statistiche & Budget",
@@ -109,7 +136,59 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
               confirm: "Conferma",
               no_logs: "Nessun log trovato per questa selezione.",
               realization: "Budget vs Realizzazione",
-              wrong_password_alert: "Password Errata!"
+              wrong_password_alert: "Password Errata!",
+              cost_analysis: "Analisi Costi & MarginalitÃ ",
+              labor_cost: "Costo Manodopera",
+              purchase_cost: "Costo Acquisti",
+              total_cost: "Costo Totale",
+              contract_value: "Valore Commessa",
+              margin: "Margine",
+              cost_breakdown: "Ripartizione Costi",
+              no_rates: "Nessun costo orario impostato per gli operai.",
+              no_order_value: "Nessun valore commessa impostato.",
+              labor: "Manodopera",
+              purchases: "Acquisti",
+              profit: "Utile"
+          },
+          pl: {
+              title: "Statystyki & BudÅ¼et",
+              subtitle: "Analiza czasu produkcji i budÅ¼etÃ³w.",
+              total_hours: "Razem Godzin",
+              by_category: "RozkÅ‚ad godzin (Donut)",
+              budget_monitor: "Monitor BudÅ¼etu",
+              remaining: "PozostaÅ‚e godziny",
+              overrun: "Przekroczono o",
+              hours: "Godziny",
+              global_logs: "Globalny Rejestr LogÃ³w",
+              log_date: "Data",
+              order: "Zlecenie",
+              log_worker: "Pracownik",
+              notes: "Notatki",
+              actions: "Akcje",
+              enter_admin_pass: "Wymagane hasÅ‚o admina",
+              select_order: "Wybierz Zlecenie",
+              all_orders: "Wszystkie Zlecenia (Razem)",
+              filter: "Filtruj",
+              client: "Klient",
+              desc: "Opis",
+              chart_total: "Razem",
+              cancel: "Anuluj",
+              confirm: "PotwierdÅº",
+              no_logs: "Brak logÃ³w dla tego zlecenia.",
+              realization: "BudÅ¼et vs Realizacja",
+              wrong_password_alert: "BÅ‚Ä™dne hasÅ‚o!",
+              cost_analysis: "Analiza KosztÃ³w & MarÅ¼a",
+              labor_cost: "Koszty Pracy",
+              purchase_cost: "Koszty ZakupÃ³w",
+              total_cost: "Koszty CaÅ‚kowite",
+              contract_value: "WartoÅ›Ä‡ Zlecenia",
+              margin: "MarÅ¼a",
+              cost_breakdown: "Struktura KosztÃ³w",
+              no_rates: "Brak stawek godzinowych dla pracownikÃ³w.",
+              no_order_value: "Brak wartoÅ›ci zlecenia.",
+              labor: "Praca",
+              purchases: "Zakupy",
+              profit: "Zysk"
           }
       };
       return dict[language]?.[key] || key;
@@ -126,7 +205,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
   }, [orders, selectedOrderId]);
 
   const allLogs = useMemo(() => {
-      // Use flat workLogs array (work_logs table) — orders.timeLogs is always [] due to lazy loading
+      // Use flat workLogs array (work_logs table) â€” orders.timeLogs is always [] due to lazy loading
       const filtered = selectedOrderId === 'ALL'
           ? workLogs
           : workLogs.filter(l => l.orderId === selectedOrderId);
@@ -183,6 +262,35 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
 
       return { total, totalBudget, cats };
   }, [filteredOrders, workLogs, selectedOrderId]);
+
+  // ============ COST ANALYSIS (v2.4.0) ============
+  const costStats = useMemo(() => {
+    const logsToCount = selectedOrderId === 'ALL'
+      ? workLogs
+      : workLogs.filter(l => l.orderId === selectedOrderId);
+
+    // Manodopera: ore Ã— costo/h operaio
+    let laborCost = 0;
+    logsToCount.forEach(log => {
+      const rate = workerRates[log.worker] || 0;
+      laborCost += (log.hours || 0) * rate;
+    });
+
+    // Acquisti: somma fatture filtrate
+    const filteredInvoices = selectedOrderId === 'ALL'
+      ? purchaseInvoices
+      : purchaseInvoices.filter(i => i.orderId === selectedOrderId);
+    const purchaseCost = filteredInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+
+    const totalCost = laborCost + purchaseCost;
+
+    // Valore commessa: somma orderValue degli ordini filtrati
+    const contractValue = filteredOrders.reduce((s, o) => s + (o.orderValue || 0), 0);
+    const margin = contractValue > 0 ? contractValue - totalCost : null;
+    const marginPct = contractValue > 0 ? ((margin || 0) / contractValue) * 100 : null;
+
+    return { laborCost, purchaseCost, totalCost, contractValue, margin, marginPct };
+  }, [workLogs, purchaseInvoices, filteredOrders, workerRates, selectedOrderId]);
 
   const verifyAndExecute = () => {
       if (!passwordPrompt) return;
@@ -295,6 +403,50 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
       );
   };
 
+  const CostDonutChart = () => {
+    const labor = costStats.laborCost;
+    const purchases = costStats.purchaseCost;
+    const marginPositive = costStats.margin !== null ? Math.max(0, costStats.margin) : 0;
+    const total = labor + purchases + marginPositive;
+    if (total === 0) return <div className="flex items-center justify-center h-48 text-gray-600 font-bold uppercase text-xs tracking-widest">{t('no_data')}</div>;
+    const segments = [
+      { label: t('labor'), value: labor, color: theme === 'gold' ? '#d4af37' : '#00f2fe' },
+      { label: t('purchases'), value: purchases, color: theme === 'gold' ? '#aa8c2c' : '#0ea5e9' },
+      { label: t('profit'), value: marginPositive, color: '#22c55e' },
+    ].filter(s => s.value > 0);
+    const size = 200, center = size / 2, radius = 70, strokeWidth = 28;
+    const circumference = 2 * Math.PI * radius;
+    let cumulative = 0;
+    return (
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative" style={{ width: size, height: size }}>
+          <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+            {segments.map((s, i) => {
+              const pct = s.value / total;
+              const dash = pct * circumference;
+              const offset = cumulative === 0 ? 0 : -(cumulative * circumference);
+              cumulative += pct;
+              return <circle key={i} cx={center} cy={center} r={radius} fill="transparent" stroke={s.color} strokeWidth={strokeWidth} strokeDasharray={`${dash} ${circumference - dash}`} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-500" />;
+            })}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className={`text-xl font-black ${theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}`}>€{costStats.totalCost.toFixed(0)}</span>
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('total_cost')}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 w-full">
+          {segments.map((s, i) => (
+            <div key={i} className="flex flex-col items-center p-3 rounded-xl bg-black/40 border border-gray-800/50">
+              <div className="w-2 h-2 rounded-full mb-1" style={{ backgroundColor: s.color }}></div>
+              <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest text-center">{s.label}</span>
+              <span className="text-sm font-black text-gray-200 mt-0.5">€{s.value.toFixed(0)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
     return (
         <div className={`p-6 h-full overflow-y-auto custom-scrollbar ${theme === 'gold' ? 'bg-[#0a0a0a]' : theme === 'space-light' ? 'bg-white' : 'bg-[#020617]'}`}>
         
@@ -343,6 +495,24 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
                     </select>
                 </div>
             </div>
+
+            {/* Tab Switcher */}
+            <div className="flex gap-2">
+                <button
+                    onClick={() => setActiveTab('hours')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${activeTab === 'hours' ? (theme === 'gold' ? 'bg-[#d4af37] text-[#0a0a0a]' : theme === 'space-light' ? 'bg-slate-800 text-white' : 'bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#020617]') : (theme === 'space-light' ? 'bg-slate-100 text-slate-500' : 'bg-black/40 text-gray-500 border border-gray-800/50')}`}
+                >
+                    <Clock size={14}/> {t('hours')}
+                </button>
+                <button
+                    onClick={() => setActiveTab('costs')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all ${activeTab === 'costs' ? (theme === 'gold' ? 'bg-[#d4af37] text-[#0a0a0a]' : theme === 'space-light' ? 'bg-slate-800 text-white' : 'bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-[#020617]') : (theme === 'space-light' ? 'bg-slate-100 text-slate-500' : 'bg-black/40 text-gray-500 border border-gray-800/50')}`}
+                >
+                    <Euro size={14}/> {t('cost_analysis')}
+                </button>
+            </div>
+
+            {activeTab === 'hours' && <>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div className={`lg:col-span-1 p-6 rounded-3xl border flex flex-col justify-center items-center text-center ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
@@ -439,6 +609,88 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
                     </table>
                 </div>
             </div>
+
+            </>}
+
+            {activeTab === 'costs' && (
+                <div className="space-y-6">
+
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className={`p-6 rounded-3xl border flex flex-col justify-center items-center text-center ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'}`}>{t('labor_cost')}</span>
+                            <span className={`text-3xl font-black ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'}`}>€{costStats.laborCost.toFixed(0)}</span>
+                            {Object.keys(workerRates).length === 0 && <span className="text-[9px] text-orange-500 font-bold uppercase mt-1">{t('no_rates')}</span>}
+                        </div>
+                        <div className={`p-6 rounded-3xl border flex flex-col justify-center items-center text-center ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'}`}>{t('purchase_cost')}</span>
+                            <span className={`text-3xl font-black ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'}`}>€{costStats.purchaseCost.toFixed(0)}</span>
+                        </div>
+                        <div className={`p-6 rounded-3xl border flex flex-col justify-center items-center text-center ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'}`}>{t('total_cost')}</span>
+                            <span className={`text-3xl font-black ${theme === 'space-light' ? 'text-slate-800' : 'text-white'}`}>€{costStats.totalCost.toFixed(0)}</span>
+                        </div>
+                        <div className={`p-6 rounded-3xl border flex flex-col justify-center items-center text-center ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'}`}>{t('contract_value')}</span>
+                            {costStats.contractValue !== null
+                                ? <span className={`text-3xl font-black ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'}`}>€{costStats.contractValue.toFixed(0)}</span>
+                                : <span className="text-xl font-black text-gray-600">â€”</span>
+                            }
+                            {costStats.contractValue === null && <span className="text-[9px] text-orange-500 font-bold uppercase mt-1">{t('no_order_value')}</span>}
+                        </div>
+                    </div>
+
+                    {/* Margin + Donut */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className={`p-8 rounded-3xl border ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <h3 className={`text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-400'}`}>
+                                <Euro size={16} className={theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}/> {t('cost_breakdown')}
+                            </h3>
+                            <CostDonutChart />
+                        </div>
+
+                        <div className={`p-8 rounded-3xl border ${theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#111] border border-gray-800/50'}`}>
+                            <h3 className={`text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-400'}`}>
+                                <Receipt size={16} className={theme === 'gold' ? 'text-[#d4af37]' : 'text-[#00f2fe]'}/> {t('margin')}
+                            </h3>
+                            {costStats.margin !== null ? (
+                                <div className="space-y-6">
+                                    <div className="flex items-baseline gap-4">
+                                        <span className={`text-5xl font-black ${costStats.margin >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {costStats.margin >= 0 ? '+' : ''}€{costStats.margin.toFixed(0)}
+                                        </span>
+                                        <span className={`text-lg font-black px-3 py-1 rounded-full ${costStats.margin >= 0 ? 'bg-green-500/20 text-green-500 border border-green-500/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}>
+                                            {costStats.marginPct !== null ? `${costStats.marginPct.toFixed(1)}%` : '---'}
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-black h-4 rounded-full overflow-hidden border border-gray-800/50">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-1000 ${costStats.margin >= 0 ? 'bg-gradient-to-r from-green-600 to-green-400' : 'bg-red-600'}`}
+                                            style={{ width: `${Math.min(Math.abs(costStats.marginPct ?? 0), 100)}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 text-xs font-black">
+                                        <div className={`p-3 rounded-xl ${theme === 'space-light' ? 'bg-slate-50' : 'bg-black/40'} border border-gray-800/50`}>
+                                            <span className={`${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'} uppercase tracking-widest block mb-1`}>{t('total_cost')}</span>
+                                            <span className={`${theme === 'space-light' ? 'text-slate-800' : 'text-white'} text-lg`}>€{costStats.totalCost.toFixed(0)}</span>
+                                        </div>
+                                        <div className={`p-3 rounded-xl ${theme === 'space-light' ? 'bg-slate-50' : 'bg-black/40'} border border-gray-800/50`}>
+                                            <span className={`${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'} uppercase tracking-widest block mb-1`}>{t('contract_value')}</span>
+                                            <span className={`${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'} text-lg`}>€{(costStats.contractValue ?? 0).toFixed(0)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-40 gap-3">
+                                    <Receipt size={32} className="text-gray-700"/>
+                                    <span className="text-xs font-bold uppercase text-gray-600 tracking-widest text-center">{t('no_order_value')}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                </div>
+            )}
         </div>
     </div>
   );

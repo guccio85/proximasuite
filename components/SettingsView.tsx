@@ -115,7 +115,7 @@ const t = (key: string) => {
             edit_admin: "Bewerken", save_admin: "Opslaan", cancel_edit: "Annuleren", role: "Rol", permissions: "Rechten",
             perm_viewPlanner: "Planner Bekijken", perm_editPlanner: "Planner Bewerken", perm_viewOrders: "Orders Bekijken", perm_editOrders: "Orders Bewerken",
             perm_viewEmployees: "Personeel Bekijken", perm_editEmployees: "Personeel Bewerken", perm_viewStatistics: "Statistieken", perm_viewSettings: "Instellingen Bekijken",
-            perm_editSettings: "Instellingen Bewerken", perm_manageBackup: "Backup Beheer", perm_deleteOrders: "Orders Verwijderen",
+            perm_editSettings: "Instellingen Bewerken", perm_manageBackup: "Backup Beheer", perm_deleteOrders: "Orders Verwijderen", perm_viewCosts: "Kosten Bekijken",
             role_admin: "Beheerder", role_manager: "Manager", role_viewer: "Kijker"
           },
           en: { 
@@ -136,7 +136,7 @@ const t = (key: string) => {
             critical_actions: "Critical Actions", delete_btn: "Delete",
             edit_admin: "Edit", save_admin: "Save", cancel_edit: "Cancel", role: "Role", permissions: "Permissions",
             perm_viewPlanner: "View Planner", perm_editPlanner: "Edit Planner", perm_viewOrders: "View Orders", perm_editOrders: "Edit Orders",
-            perm_viewEmployees: "View Staff", perm_editEmployees: "Edit Staff", perm_viewStatistics: "Statistics", perm_viewSettings: "View Settings",
+            perm_viewEmployees: "View Staff", perm_editEmployees: "Edit Staff", perm_viewStatistics: "Statistics", perm_viewSettings: "View Settings", perm_viewCosts: "View Costs",
             perm_editSettings: "Edit Settings", perm_manageBackup: "Backup Management", perm_deleteOrders: "Delete Orders",
             role_admin: "Administrator", role_manager: "Manager", role_viewer: "Viewer"
           },
@@ -158,7 +158,7 @@ const t = (key: string) => {
             critical_actions: "Azioni Critiche", delete_btn: "Elimina",
             edit_admin: "Modifica", save_admin: "Salva", cancel_edit: "Annulla", role: "Ruolo", permissions: "Permessi",
             perm_viewPlanner: "Visualizza Planner", perm_editPlanner: "Modifica Planner", perm_viewOrders: "Visualizza Ordini", perm_editOrders: "Modifica Ordini",
-            perm_viewEmployees: "Visualizza Personale", perm_editEmployees: "Modifica Personale", perm_viewStatistics: "Statistiche", perm_viewSettings: "Visualizza Impostazioni",
+            perm_viewEmployees: "Visualizza Personale", perm_editEmployees: "Modifica Personale", perm_viewStatistics: "Statistiche", perm_viewSettings: "Visualizza Impostazioni", perm_viewCosts: "Visualizza Costi",
             perm_editSettings: "Modifica Impostazioni", perm_manageBackup: "Gestione Backup", perm_deleteOrders: "Elimina Ordini",
             role_admin: "Amministratore", role_manager: "Manager", role_viewer: "Visualizzatore"
           }

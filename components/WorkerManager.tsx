@@ -8,22 +8,25 @@ interface WorkerManagerProps {
   workers: string[];
   workerPasswords?: WorkerPasswords;
   workerContacts?: Record<string, WorkerContact>;
+  workerRates?: Record<string, number>;
   onAdd: (name: string, password?: string) => void;
   onUpdate: (oldName: string, newName: string) => void;
   onDelete: (name: string) => void;
   onUpdatePassword?: (worker: string, pass: string) => void;
   onUpdateContacts?: (contacts: Record<string, WorkerContact>) => void;
+  onUpdateRates?: (rates: Record<string, number>) => void;
   language?: Language;
 }
 
 export const WorkerManager: React.FC<WorkerManagerProps> = ({ 
-    workers, workerPasswords = {}, workerContacts = {}, onAdd, onUpdate, onDelete, onUpdatePassword, onUpdateContacts, language = 'nl' 
+    workers, workerPasswords = {}, workerContacts = {}, workerRates = {}, onAdd, onUpdate, onDelete, onUpdatePassword, onUpdateContacts, onUpdateRates, language = 'nl' 
 }) => {
   const [newWorkerName, setNewWorkerName] = useState('');
   const [newWorkerPass, setNewWorkerPass] = useState('');
   const [editingWorker, setEditingWorker] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPass, setEditPass] = useState('');
+  const [editRate, setEditRate] = useState<string>('');
   const [editContact, setEditContact] = useState<WorkerContact>({});
   const [showPasswordFor, setShowPasswordFor] = useState<string | null>(null);
   const [expandedWorker, setExpandedWorker] = useState<string | null>(null);
@@ -53,7 +56,9 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
             save: "Opslaan",
             cancel: "Annuleren",
             edit: "Bewerken",
-            delete_confirm: "Weet je het zeker?"
+            delete_confirm: "Weet je het zeker?",
+            hourly_rate: "Uurtarief (€/h)",
+            rate_placeholder: "0.00"
         },
         en: {
             title: "Staff Directory",
@@ -76,7 +81,9 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
             save: "Save",
             cancel: "Cancel",
             edit: "Edit",
-            delete_confirm: "Are you sure?"
+            delete_confirm: "Are you sure?",
+            hourly_rate: "Hourly Rate (€/h)",
+            rate_placeholder: "0.00"
         },
         it: {
             title: "Rubrica Personale",
@@ -99,7 +106,34 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
             save: "Salva",
             cancel: "Annulla",
             edit: "Modifica",
-            delete_confirm: "Sei sicuro?"
+            delete_confirm: "Sei sicuro?",
+            hourly_rate: "Costo Orario (€/h)",
+            rate_placeholder: "0.00"
+        },
+        pl: {
+            title: "Lista Pracowników",
+            subtitle: "Zarządzaj danymi kontaktowymi i dostępem pracowników.",
+            placeholder: "Nowy pracownik...",
+            pass_placeholder: "Hasło...",
+            add: "Dodaj",
+            empty: "Brak pracowników.",
+            password: "Hasło",
+            no_password: "Brak hasła",
+            email: "Email",
+            phone: "Telefon",
+            address: "Adres",
+            notes: "Notatki",
+            photo: "Zdjęcie",
+            upload_photo: "Wgraj Zdjęcie",
+            remove_photo: "Usuń",
+            search: "Szukaj pracownika...",
+            contact_info: "Dane kontaktowe",
+            save: "Zapisz",
+            cancel: "Anuluj",
+            edit: "Edytuj",
+            delete_confirm: "Jesteś pewny?",
+            hourly_rate: "Stawka Godzinowa (€/h)",
+            rate_placeholder: "0.00"
         }
     };
     return dict[language]?.[key] || key;
@@ -118,6 +152,7 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
     setEditingWorker(worker);
     setEditName(worker);
     setEditPass(workerPasswords[worker] || '');
+    setEditRate(workerRates[worker] !== undefined ? String(workerRates[worker]) : '');
     setEditContact(workerContacts[worker] || {}); // instant placeholder
     setExpandedWorker(worker);
     // v2.3.5 Bis: lazy-load contact detail (photo, email, phone) only when profile is opened
@@ -136,6 +171,17 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
       }
       if (onUpdatePassword) {
           onUpdatePassword(editName.trim(), editPass.trim());
+      }
+      if (onUpdateRates) {
+        const updatedRates = { ...workerRates };
+        if (editName !== editingWorker) delete updatedRates[editingWorker];
+        const rateNum = parseFloat(editRate);
+        if (!isNaN(rateNum) && rateNum > 0) {
+          updatedRates[editName.trim()] = rateNum;
+        } else {
+          delete updatedRates[editName.trim()];
+        }
+        onUpdateRates(updatedRates);
       }
       if (onUpdateContacts) {
         const updated = { ...workerContacts };
@@ -357,6 +403,15 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
                               </p>
                             </div>
                           </div>
+                          <div className="flex items-start gap-3">
+                            <span className="text-gray-400 mt-0.5 shrink-0 text-base">💶</span>
+                            <div>
+                              <p className="text-xs text-gray-500 font-bold uppercase">{t('hourly_rate')}</p>
+                              <p className="text-gray-800 font-bold">
+                                {workerRates[worker] ? `€ ${workerRates[worker].toFixed(2)} / h` : <span className="text-gray-400 italic">—</span>}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                         {contact.notes && (
                           <div className="mt-4 pt-3 border-t border-gray-100">
@@ -410,6 +465,18 @@ export const WorkerManager: React.FC<WorkerManagerProps> = ({
                               type="text" value={editPass} onChange={(e) => setEditPass(e.target.value)} placeholder={t('pass_placeholder')}
                               className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-mono"
                             />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-gray-600 uppercase mb-1 flex items-center gap-1">💶 {t('hourly_rate')}</label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">€</span>
+                              <input
+                                type="number" min="0" step="0.01" value={editRate}
+                                onChange={(e) => setEditRate(e.target.value)}
+                                placeholder={t('rate_placeholder')}
+                                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right font-bold"
+                              />
+                            </div>
                           </div>
                         </div>
 

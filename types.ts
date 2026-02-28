@@ -25,6 +25,11 @@ export interface TimeLog {
   activity?: string; // es. 'Zagen', 'Kanten', 'Reistijd'
 }
 
+// WorkLog extends TimeLog with orderId (used in flat work_logs table)
+export interface WorkLog extends TimeLog {
+  orderId: string;
+}
+
 export type WorkerPasswords = Record<string, string>;
 
 export interface GlobalDay {
@@ -49,6 +54,7 @@ export interface AdminPermissions {
   viewEmployees: boolean;
   editEmployees: boolean;
   viewStatistics: boolean;
+  viewCosts: boolean;
   viewSettings: boolean;
   editSettings: boolean;
   manageBackup: boolean;
@@ -63,6 +69,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: AdminPermissions = {
   viewEmployees: true,
   editEmployees: true,
   viewStatistics: true,
+  viewCosts: true,
   viewSettings: true,
   editSettings: true,
   manageBackup: true,
@@ -124,32 +131,23 @@ export interface CompanySettings {
   mobilePermissions?: MobilePermissions;
   workerPasswords?: WorkerPasswords;
   workerContacts?: Record<string, WorkerContact>;
+  workerRates?: Record<string, number>; // €/h per operaio
 
   security?: {
     userPassword?: string;
   };
 }
 
-export interface WorkLog {
+// v2.4.0 — Fatture / Spese di acquisto collegate a un ordine
+export interface PurchaseInvoice {
   id: string;
-  orderId: string;
-  worker: string;
-  date: string; // ISO Date YYYY-MM-DD
-  hours: number; 
-  // Changed description to note to match TimeLog and fix interface inconsistency
-  note: string;
+  orderId: string;       // TEXT, references work_orders(id)
+  supplier: string;      // Fornitore / Leverancier
+  description: string;   // Descrizione
+  amount: number;        // Importo €
+  date: string;          // ISO YYYY-MM-DD
+  category: string;      // es. 'MATERIALI', 'TRASPORTO', 'SUBAPPALTO', 'ALTRO'
   timestamp: number;
-  photos?: string[]; 
-  hoursBreakdown?: {
-    kbw?: number;
-    plw?: number;
-    extra?: number;
-    boren?: number;
-    gaten?: number;
-    zaggen?: number;
-  };
-  category?: string;
-  activity?: string;
 }
 
 export interface WorkOrder {
@@ -244,6 +242,9 @@ export interface WorkOrder {
   createdAt: number;
   assignedWorker?: string; 
   assignmentType?: AssignmentType;
+
+  // v2.4.0 — Valore commessa (importo fatturato al cliente)
+  orderValue?: number;
 
   timeLogs?: TimeLog[];
 }

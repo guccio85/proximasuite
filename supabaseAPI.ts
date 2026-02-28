@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, GlobalDay, WorkLog, TimeLog, TaskColors } from './types';
+import { WorkOrder, CompanySettings, WorkerAvailability, RecurringAbsence, GlobalDay, WorkLog, TimeLog, TaskColors, PurchaseInvoice } from './types';
 
 // v2.3.5 diagnostics: quick connectivity check used at app startup
 export const testConnection = async (): Promise<void> => {
@@ -72,6 +72,7 @@ export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
       assignedWorker:  row.assigned_worker  || lightData.assignedWorker  || '',
       assignmentType:  row.assignment_type  || lightData.assignmentType  || '',
       updated_at:      row.updated_at       || '',
+      orderValue:     row.order_value !== undefined ? Number(row.order_value) : lightData.orderValue,
       // Heavy detail fields — empty stubs until fetchOrderDetail() is called
       photos:    [],
       timeLogs:  [],
@@ -98,6 +99,7 @@ export const saveOrder = async (order: WorkOrder): Promise<boolean> => {
     created_at: order.createdAt ?? new Date().toISOString(),
     assigned_worker: order.assignedWorker ?? null,
     assignment_type: order.assignmentType ?? null,
+    order_value: order.orderValue ?? null,
     data: order, // Salva l'oggetto completo in JSONB
     updated_at: new Date().toISOString()
   };
@@ -850,20 +852,64 @@ export const saveWorkLog = async (log: WorkLog): Promise<boolean> => {
 };
 
 // ============================================
-// BULK SYNC (sostituisce /api/data)
+// PURCHASE INVOICES (v2.4.0)
 // ============================================
+
+export const fetchPurchaseInvoices = async (): Promise<PurchaseInvoice[]> => {
+  const { data, error } = await supabase
+    .from('purchase_invoices')
+    .select('*')
+    .order('timestamp', { ascending: false });
+  if (error) { console.error('Error fetching purchase invoices:', error); return []; }
+  return (data || []).map((row: any): PurchaseInvoice => ({
+    id: row.id,
+    orderId: row.order_id,
+    supplier: row.supplier || '',
+    description: row.description || '',
+    amount: Number(row.amount) || 0,
+    date: row.date || '',
+    category: row.category || 'ALTRO',
+    timestamp: Number(row.timestamp) || Date.now(),
+  }));
+};
+
+export const savePurchaseInvoice = async (inv: PurchaseInvoice): Promise<boolean> => {
+  const { error } = await supabase
+    .from('purchase_invoices')
+    .upsert({
+      id: inv.id,
+      order_id: inv.orderId,
+      supplier: inv.supplier,
+      description: inv.description,
+      amount: inv.amount,
+      date: inv.date,
+      category: inv.category,
+      timestamp: inv.timestamp,
+    });
+  if (error) { console.error('Error saving purchase invoice:', error); return false; }
+  return true;
+};
+
+export const deletePurchaseInvoice = async (id: string): Promise<boolean> => {
+  const { error } = await supabase.from('purchase_invoices').delete().eq('id', id);
+  if (error) { console.error('Error deleting purchase invoice:', error); return false; }
+  return true;
+};
+
+
 
 // v2.3.5: accepts `since` for incremental order sync
 export const fetchAllData = async (since?: string) => {
   try {
-    const [ordersData, workersData, settingsData, availsData, absencesData, globalDaysData, workLogsData] = await Promise.all([
+    const [ordersData, workersData, settingsData, availsData, absencesData, globalDaysData, workLogsData, purchaseInvoicesData] = await Promise.all([
       fetchAllOrders(since),
       fetchAllWorkers(),
       fetchCompanySettings(),
       fetchAllAvailabilities(),
       fetchRecurringAbsences(),
       fetchGlobalDays(),
-      fetchAllWorkLogs()
+      fetchAllWorkLogs(),
+      fetchPurchaseInvoices()
     ]);
 
     // Merge workerContacts from workers table into settings
@@ -881,7 +927,8 @@ export const fetchAllData = async (since?: string) => {
       availabilities: availsData,
       recurringAbsences: absencesData,
       globalDays: globalDaysData,
-      workLogs: workLogsData
+      workLogs: workLogsData,
+      purchaseInvoices: purchaseInvoicesData
     };
   } catch (error) {
     console.error('Error fetching all data:', error);
@@ -894,7 +941,8 @@ export const fetchAllData = async (since?: string) => {
       availabilities: [],
       recurringAbsences: [],
       globalDays: [],
-      workLogs: []
+      workLogs: [],
+      purchaseInvoices: []
     };
   }
 };

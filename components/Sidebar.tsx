@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Settings, FileText, UserCog, Plus, Users, CalendarClock, ChevronLeft, ChevronRight, Box, LogOut, QrCode, BarChart3, Globe, Hexagon, Palette } from 'lucide-react';
+import { LayoutDashboard, Settings, FileText, UserCog, Plus, Users, CalendarClock, ChevronLeft, ChevronRight, Box, LogOut, QrCode, BarChart3, Globe, Hexagon, Palette, Coins } from 'lucide-react';
 import { CompanySettings, Language } from '../types';
 
 interface SidebarProps {
@@ -56,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             rubrica_ditte: "Rubrica Ditte",
             archive: "Order Archief", 
             statistics: "Uren Statistieken", 
+            costs: "Kosten Beheer",
             settings: "Instellingen & Backup", 
             new_order: "NIEUWE ORDER", 
             scan_mobile: "Scan voor Mobiel", 
@@ -76,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             rubrica_ditte: "Contractor Directory",
             archive: "Order Archive", 
             statistics: "Statistics", 
+            costs: "Cost Management",
             settings: "Settings & Backup", 
             new_order: "NEW ORDER", 
             scan_mobile: "Scan Mobile", 
@@ -94,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             rubrica_ditte: "Rubrica Ditte",
             archive: "Archivio Ordini", 
             statistics: "Statistiche", 
+            costs: "Gestione Costi",
             settings: "Impostazioni & Backup", 
             new_order: "NUOVO ORDINE", 
             scan_mobile: "Mobile QR", 
@@ -148,6 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 { id: 'employees', icon: Users, label: t('employees') },
                 { id: 'rubrica-ditte', icon: UserCog, label: t('rubrica_ditte') },
                 { id: 'statistics', icon: BarChart3, label: t('statistics') },
+                { id: 'costs', icon: Coins, label: t('costs') },
                 { id: 'archief', icon: FileText, label: t('archive') },
                 { id: 'instellingen', icon: Settings, label: t('settings') }
                 ].map(item => (
