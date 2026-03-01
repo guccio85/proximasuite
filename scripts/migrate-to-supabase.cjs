@@ -20,8 +20,8 @@ const supabase = createClient(
 async function main() {
     console.log('🚀 Starting migration from database.json to Supabase...\n');
 
-    // Carica database.json
-    const dbPath = path.join(__dirname, 'database.json');
+    // Carica database.json (file rimasto nella root, scripts/ è una cartella sotto)
+    const dbPath = path.join(__dirname, '../database.json');
     if (!fs.existsSync(dbPath)) {
         console.error('❌ database.json not found!');
         process.exit(1);
