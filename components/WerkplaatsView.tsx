@@ -12,7 +12,9 @@ declare global {
         alt?: string;
         'auto-rotate'?: boolean | string;
         'camera-controls'?: boolean | string;
+        'touch-action'?: string;
         ar?: boolean | string;
+        'ar-modes'?: string;
         style?: React.CSSProperties;
       };
     }
@@ -33,10 +35,12 @@ interface WerkplaatsViewProps {
   departments?: Department[];
   mobilePermissions?: MobilePermissions;
   theme?: 'gold' | 'space';
+  isAdmin?: boolean;
+  arEnabled?: boolean;
 }
 
 export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({ 
-    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, onFetchOrderDetail, onSaveWorkLog, language = 'nl', departments = [], mobilePermissions, theme = 'gold'
+    orders, lastUpdated, workers = [], workerPasswords = {}, onSaveOrder, onDeleteLog, onSaveOrderPhoto, onFetchOrderDetail, onSaveWorkLog, language = 'nl', departments = [], mobilePermissions, theme = 'gold', isAdmin = false, arEnabled = false
 }) => {
   // Internal language state — persisted in localStorage, initialized from prop or saved pref
   const [lang, setLang] = useState<Language>(() => {
@@ -140,10 +144,10 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
 
   const t = (key: string) => {
     const dict: Record<string, Record<string, string>> = {
-        nl: { title: "Werkplaats Overzicht", search_placeholder: "Zoek op nummer...", updated: "Geüpdatet:", no_results: "Geen orders gevonden.", mat: "Mat", beh: "Beh", desc: "Omschrijving", plan: "Planning", login_title: "Werkplaats", select_name: "Selecteer uw naam", enter_pass: "Wachtwoord", login: "Inloggen", logout: "Uitloggen", back: "Terug", wrong_pass: "Wachtwoord onjuist", log_hours: "Uren Registreren", date: "Datum", hours: "Uren", note: "Notitie", save_log: "Opslaan", log_history: "Uren", total_hours: "Totaal", select_category: "Afdeling", select_activity: "Activiteit", report_ready: "GEREED", report_ready_desc: "Laat een bericht achter.", confirm_ready: "Bevestig", cancel: "Annuleren", delete_confirm: "Verwijderen?", hidden: "*** (Verborgen)", photos: "Foto's", drawings: "Tekeningen", uploadPhoto: "Foto Verzenden", no_photos: "Geen foto's.", no_drawings: "Geen tekeningen.", drawings_loaded: "Tekening", model_3d: "3D Model", view_3d: "3D Bekijken", no_model: "Geen 3D model." },
-        en: { title: "Workshop Overview", search_placeholder: "Search...", updated: "Updated:", no_results: "No orders.", mat: "Mat", beh: "Trt", desc: "Desc", plan: "Plan", login_title: "Workshop", select_name: "Select name", enter_pass: "Password", login: "Login", logout: "Logout", back: "Back", wrong_pass: "Incorrect", log_hours: "Log Hours", date: "Date", hours: "Hrs", note: "Note", save_log: "Save", log_history: "Logs", total_hours: "Total", select_category: "Dept.", select_activity: "Activity", report_ready: "READY", report_ready_desc: "Leave a note.", confirm_ready: "Confirm", cancel: "Cancel", delete_confirm: "Delete?", hidden: "*** (Hidden)", photos: "Photos", drawings: "Drawings", uploadPhoto: "Send Photo", no_photos: "No photos.", no_drawings: "No drawings.", drawings_loaded: "Drawing", model_3d: "3D Model", view_3d: "View 3D", no_model: "No 3D model." },
-        it: { title: "Officina", search_placeholder: "Cerca...", updated: "Aggiornato:", no_results: "Nessun ordine.", mat: "Mat", beh: "Tratt", desc: "Desc", plan: "Piano", login_title: "Login", select_name: "Seleziona nome", enter_pass: "Password", login: "Accedi", logout: "Esci", back: "Indietro", wrong_pass: "Errata", log_hours: "Ore", date: "Data", hours: "Ore", note: "Nota", save_log: "Salva", log_history: "Storico", total_hours: "Tot", select_category: "Reparto", select_activity: "Attività", report_ready: "PRONTO", report_ready_desc: "Lascia una nota.", confirm_ready: "Conferma", cancel: "Annulla", delete_confirm: "Eliminare?", hidden: "*** (Nascosto)", photos: "Foto", drawings: "Disegni", uploadPhoto: "Invia Foto", no_photos: "Nessuna foto.", no_drawings: "Nessun disegno.", drawings_loaded: "Disegno", model_3d: "Modello 3D", view_3d: "Vedi 3D", no_model: "Nessun modello 3D." },
-        pl: { title: "Przegląd Warsztatu", search_placeholder: "Szukaj numeru...", updated: "Zaktualizowano:", no_results: "Brak zleceń.", mat: "Mat", beh: "Obr", desc: "Opis", plan: "Plan", login_title: "Warsztat", select_name: "Wybierz imię", enter_pass: "Hasło", login: "Zaloguj", logout: "Wyloguj", back: "Powrót", wrong_pass: "Błędne hasło", log_hours: "Rejestruj Godziny", date: "Data", hours: "Godz", note: "Uwaga", save_log: "Zapisz", log_history: "Historia", total_hours: "Łącznie", select_category: "Dział", select_activity: "Aktywność", report_ready: "GOTOWE", report_ready_desc: "Zostaw wiadomość.", confirm_ready: "Potwierdź", cancel: "Anuluj", delete_confirm: "Usunąć?", hidden: "*** (Ukryte)", photos: "Zdjęcia", drawings: "Rysunki", uploadPhoto: "Wyślij Zdjęcie", no_photos: "Brak zdjęć.", no_drawings: "Brak rysunków.", drawings_loaded: "Rysunek", model_3d: "Model 3D", view_3d: "Zobacz 3D", no_model: "Brak modelu 3D." }
+        nl: { title: "Werkplaats Overzicht", search_placeholder: "Zoek op nummer...", updated: "Geüpdatet:", no_results: "Geen orders gevonden.", mat: "Mat", beh: "Beh", desc: "Omschrijving", plan: "Planning", login_title: "Werkplaats", select_name: "Selecteer uw naam", enter_pass: "Wachtwoord", login: "Inloggen", logout: "Uitloggen", back: "Terug", wrong_pass: "Wachtwoord onjuist", log_hours: "Uren Registreren", date: "Datum", hours: "Uren", note: "Notitie", save_log: "Opslaan", log_history: "Uren", total_hours: "Totaal", select_category: "Afdeling", select_activity: "Activiteit", report_ready: "GEREED", report_ready_desc: "Laat een bericht achter.", confirm_ready: "Bevestig", cancel: "Annuleren", delete_confirm: "Verwijderen?", hidden: "*** (Verborgen)", photos: "Foto's", drawings: "Tekeningen", uploadPhoto: "Foto Verzenden", no_photos: "Geen foto's.", no_drawings: "Geen tekeningen.", drawings_loaded: "Tekening", model_3d: "3D Model", view_3d: "3D Bekijken", no_model: "Geen 3D model.", view_ar: "AR Bekijken" },
+        en: { title: "Workshop Overview", search_placeholder: "Search...", updated: "Updated:", no_results: "No orders.", mat: "Mat", beh: "Trt", desc: "Desc", plan: "Plan", login_title: "Workshop", select_name: "Select name", enter_pass: "Password", login: "Login", logout: "Logout", back: "Back", wrong_pass: "Incorrect", log_hours: "Log Hours", date: "Date", hours: "Hrs", note: "Note", save_log: "Save", log_history: "Logs", total_hours: "Total", select_category: "Dept.", select_activity: "Activity", report_ready: "READY", report_ready_desc: "Leave a note.", confirm_ready: "Confirm", cancel: "Cancel", delete_confirm: "Delete?", hidden: "*** (Hidden)", photos: "Photos", drawings: "Drawings", uploadPhoto: "Send Photo", no_photos: "No photos.", no_drawings: "No drawings.", drawings_loaded: "Drawing", model_3d: "3D Model", view_3d: "View 3D", no_model: "No 3D model.", view_ar: "View AR" },
+        it: { title: "Officina", search_placeholder: "Cerca...", updated: "Aggiornato:", no_results: "Nessun ordine.", mat: "Mat", beh: "Tratt", desc: "Desc", plan: "Piano", login_title: "Login", select_name: "Seleziona nome", enter_pass: "Password", login: "Accedi", logout: "Esci", back: "Indietro", wrong_pass: "Errata", log_hours: "Ore", date: "Data", hours: "Ore", note: "Nota", save_log: "Salva", log_history: "Storico", total_hours: "Tot", select_category: "Reparto", select_activity: "Attività", report_ready: "PRONTO", report_ready_desc: "Lascia una nota.", confirm_ready: "Conferma", cancel: "Annulla", delete_confirm: "Eliminare?", hidden: "*** (Nascosto)", photos: "Foto", drawings: "Disegni", uploadPhoto: "Invia Foto", no_photos: "Nessuna foto.", no_drawings: "Nessun disegno.", drawings_loaded: "Disegno", model_3d: "Modello 3D", view_3d: "Vedi 3D", no_model: "Nessun modello 3D.", view_ar: "Vedi AR" },
+        pl: { title: "Przegląd Warsztatu", search_placeholder: "Szukaj numeru...", updated: "Zaktualizowano:", no_results: "Brak zleceń.", mat: "Mat", beh: "Obr", desc: "Opis", plan: "Plan", login_title: "Warsztat", select_name: "Wybierz imię", enter_pass: "Hasło", login: "Zaloguj", logout: "Wyloguj", back: "Powrót", wrong_pass: "Błędne hasło", log_hours: "Rejestruj Godziny", date: "Data", hours: "Godz", note: "Uwaga", save_log: "Zapisz", log_history: "Historia", total_hours: "Łącznie", select_category: "Dział", select_activity: "Aktywność", report_ready: "GOTOWE", report_ready_desc: "Zostaw wiadomość.", confirm_ready: "Potwierdź", cancel: "Anuluj", delete_confirm: "Usunąć?", hidden: "*** (Ukryte)", photos: "Zdjęcia", drawings: "Rysunki", uploadPhoto: "Wyślij Zdjęcie", no_photos: "Brak zdjęć.", no_drawings: "Brak rysunków.", drawings_loaded: "Rysunek", model_3d: "Model 3D", view_3d: "Zobacz 3D", no_model: "Brak modelu 3D.", view_ar: "Zobacz AR" }
     };
     return dict[lang]?.[key] || key;
   };
@@ -356,8 +360,28 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                               alt="3D Model"
                               camera-controls
                               auto-rotate
+                              ar
+                              ar-modes="webxr scene-viewer quick-look"
+                              touch-action="pan-y"
                               style={{ width: '100%', height: '100%', background: '#111' }}
-                          />
+                          >
+                              {(isAdmin || arEnabled) && (
+                                  <button
+                                      slot="ar-button"
+                                      style={{
+                                          position: 'absolute', bottom: '16px', right: '16px',
+                                          padding: '10px 18px', borderRadius: '10px',
+                                          fontWeight: 'bold', fontSize: '13px',
+                                          display: 'flex', alignItems: 'center', gap: '6px',
+                                          cursor: 'pointer', border: 'none',
+                                          background: selectedTheme === 'gold' ? '#d4af37' : '#00f2fe',
+                                          color: '#000',
+                                      }}
+                                  >
+                                      👁️ {t('view_ar')}
+                                  </button>
+                              )}
+                          </model-viewer>
                       </div>
                   </div>
               )}

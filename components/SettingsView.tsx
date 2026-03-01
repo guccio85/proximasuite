@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     Monitor, RefreshCw, ZoomIn, ZoomOut, Save, Type, Trash2, Database, AlertTriangle, 
     Table, Palette, Sidebar as SidebarIcon, ShieldCheck, Lock, MoveVertical, 
-    ArrowUpDown, Maximize2, Minimize2, Settings, X, ChevronRight, Layout, CalendarDays, Globe, Check, Building2, UploadCloud, Image as ImageIcon, Pencil, AlertOctagon, UserPlus, Users, Briefcase, Download, Upload, Wand2, Smartphone, Workflow, Plus
+    ArrowUpDown, Maximize2, Minimize2, Settings, X, ChevronRight, Layout, CalendarDays, Globe, Check, Building2, UploadCloud, Image as ImageIcon, Pencil, AlertOctagon, UserPlus, Users, Briefcase, Download, Upload, Wand2, Smartphone, Workflow, Plus, Camera, MapPin
 } from 'lucide-react';
 import { TaskColors, Language, AdminProfile, AdminPermissions, DEFAULT_ADMIN_PERMISSIONS, Department, MobilePermissions, Subcontractor, WorkerMobilePermissions } from '../types';
 import { SETTINGS_DICT, createTranslator } from '../i18n';
 import { PasswordPromptModal } from './PasswordPromptModal';
+import * as PermissionsService from '../services/permissionsService';
 
 interface SettingsViewProps {
   isOpen?: boolean; 
@@ -55,13 +56,15 @@ interface SettingsViewProps {
   onUpdateMobilePermissions?: (permissions: MobilePermissions) => void;
 theme?: 'gold' | 'space' | 'space-light';
 onThemeChange?: (theme: 'gold' | 'space' | 'space-light') => void;
+arEnabled?: boolean;
+onArEnabledChange?: (val: boolean) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
     isOpen, onClose, scale, onScaleChange, fontSize, onFontSizeChange, tableFontSize, onTableFontSizeChange, onDeleteCompleted, layoutSpacing = 10, onLayoutSpacingChange,
     taskColors, onTaskColorsChange, adminProfiles = [], onUpdateAdminProfiles, adminPassword, onAdminPasswordChange, companyName = '', companyLogo, onUpdateCompanyDetails,
     language = 'nl', onLanguageChange, onTotalReset, subcontractors = [], onAddSubcontractor, onDeleteSubcontractor, onBackup, onRestore, onTriggerWizard,
-    departments = [], onUpdateDepartments, workers = [], mobilePermissions, onUpdateMobilePermissions, theme = 'gold', onThemeChange
+    departments = [], onUpdateDepartments, workers = [], mobilePermissions, onUpdateMobilePermissions, theme = 'gold', onThemeChange, arEnabled = false, onArEnabledChange
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'security' | 'customization' | 'production' | 'partners' | 'workflow' | 'mobile'>('general');
   const [newAdminName, setNewAdminName] = useState('');
@@ -72,6 +75,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [editAdminRole, setEditAdminRole] = useState<'admin' | 'manager' | 'viewer'>('admin');
   const [editAdminPerms, setEditAdminPerms] = useState<AdminPermissions>({...DEFAULT_ADMIN_PERMISSIONS});
   const [expandedAdminId, setExpandedAdminId] = useState<string | null>(null);
+  const [cameraPermStatus, setCameraPermStatus] = useState<string>('');
+  const [locationPermStatus, setLocationPermStatus] = useState<string>('');
   
   // Subcontractor form state
   const [newSubName, setNewSubName] = useState('');
@@ -588,6 +593,57 @@ const t = createTranslator(SETTINGS_DICT, language);
                                     })}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* AR & PERMISSIONS — sempre visibile nella tab mobile */}
+                    {activeTab === 'mobile' && (
+                        <div className={`p-6 rounded-xl border shadow-sm ${theme === 'gold' ? 'bg-[#141414] border-[#d4af37]/20' : theme === 'space-light' ? 'bg-white border-slate-200' : 'bg-[#0f172a] border-[#00f2fe]/20'}`}>
+                            <h4 className={`font-bold mb-2 flex items-center gap-2 ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'}`}>
+                                <Globe size={18}/> {t('ar_section')}
+                            </h4>
+                            <p className={`text-sm mb-5 ${theme === 'space-light' ? 'text-slate-500' : 'text-gray-500'}`}>{t('ar_enable_desc')}</p>
+
+                            {/* Toggle AR globale */}
+                            <div className={`flex items-center justify-between p-3 border rounded-lg mb-5 ${theme === 'gold' ? 'border-gray-800 bg-[#0a0a0a]' : theme === 'space-light' ? 'border-slate-200 bg-slate-50' : 'border-gray-800 bg-[#020617]'}`}>
+                                <span className={`text-sm font-medium ${theme === 'space-light' ? 'text-slate-700' : 'text-gray-300'}`}>{t('ar_enable')}</span>
+                                <div
+                                    className={`w-10 h-5 rounded-full p-1 transition-colors cursor-pointer ${arEnabled ? 'bg-green-600' : 'bg-gray-700'}`}
+                                    onClick={() => onArEnabledChange?.(!arEnabled)}
+                                >
+                                    <div className={`w-3 h-3 rounded-full bg-white shadow-sm transform transition-transform ${arEnabled ? 'translate-x-5' : ''}`}></div>
+                                </div>
+                            </div>
+
+                            {/* Pulsanti permessi */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={async () => { const s = await PermissionsService.requestCameraPermission(); setCameraPermStatus(s); }}
+                                        className={`flex-1 px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors border ${theme === 'gold' ? 'bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#d4af37] border-[#d4af37]/30' : theme === 'space-light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border-[#00f2fe]/30'}`}
+                                    >
+                                        <Camera size={15}/> {t('request_camera')}
+                                    </button>
+                                    {cameraPermStatus && (
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-md whitespace-nowrap ${cameraPermStatus === 'granted' ? 'bg-green-600/20 text-green-400' : cameraPermStatus === 'web' ? 'bg-blue-600/20 text-blue-400' : 'bg-red-600/20 text-red-400'}`}>
+                                            {t(`perm_${cameraPermStatus}`) || cameraPermStatus}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={async () => { const s = await PermissionsService.requestLocationPermission(); setLocationPermStatus(s); }}
+                                        className={`flex-1 px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors border ${theme === 'gold' ? 'bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#d4af37] border-[#d4af37]/30' : theme === 'space-light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border-[#00f2fe]/30'}`}
+                                    >
+                                        <MapPin size={15}/> {t('request_location')}
+                                    </button>
+                                    {locationPermStatus && (
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-md whitespace-nowrap ${locationPermStatus === 'granted' ? 'bg-green-600/20 text-green-400' : locationPermStatus === 'web' ? 'bg-blue-600/20 text-blue-400' : 'bg-red-600/20 text-red-400'}`}>
+                                            {t(`perm_${locationPermStatus}`) || locationPermStatus}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

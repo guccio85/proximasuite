@@ -221,8 +221,14 @@ const App: React.FC = () => {
       localStorage.removeItem(`${STORAGE_PREFIX}currentAdmin`);
     }
   }, [currentAdmin]);
-  
-  // TEMA GLOBALE v2.3.1
+
+  // Derivazione ruolo admin: admin se loggato e (nessun profilo configurato, o profilo con role==='admin')
+  const currentAdminProfile = companySettings?.adminProfiles?.find(p => p.name === currentAdmin);
+  const isAdmin = currentAdmin !== null && (
+    (companySettings?.adminProfiles?.length ?? 0) === 0 ||
+    currentAdminProfile?.role === 'admin' ||
+    !currentAdminProfile
+  );
   const [theme, setTheme] = useState<'gold' | 'space' | 'space-light'>(() => 
     (localStorage.getItem(`${STORAGE_PREFIX}theme`) as 'gold' | 'space' | 'space-light') || 'space'
   );
@@ -826,6 +832,13 @@ const App: React.FC = () => {
           saveData({ orders: updated });
           return updated;
       });
+  };
+
+  const handleArEnabledChange = (val: boolean) => {
+      if (!companySettings) return;
+      const updated = { ...companySettings, arEnabled: val };
+      setCompanySettings(updated);
+      saveData({ settings: updated });
   };
 
   // Print Daily Hours Report
@@ -1530,6 +1543,8 @@ const App: React.FC = () => {
                         settingsProtectedUntilRef.current = Date.now() + 15000;
                         SupabaseAPI.saveAdminProfilesDirect(profiles);
                     }}
+                    arEnabled={companySettings?.arEnabled ?? false}
+                    onArEnabledChange={handleArEnabledChange}
                   />
               );
           default: 
@@ -1599,6 +1614,8 @@ const App: React.FC = () => {
               departments={companySettings?.departments}
               mobilePermissions={companySettings?.mobilePermissions}
               theme={theme === 'space-light' ? 'gold' : theme}
+              isAdmin={isAdmin}
+              arEnabled={companySettings?.arEnabled ?? false}
           />
       );
   }

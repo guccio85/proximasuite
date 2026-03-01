@@ -133,6 +133,9 @@ export const SETTINGS_DICT: Record<string, Record<string, string>> = {
     perm_viewEmployees: 'Personeel Bekijken', perm_editEmployees: 'Personeel Bewerken', perm_viewStatistics: 'Statistieken', perm_viewSettings: 'Instellingen Bekijken',
     perm_editSettings: 'Instellingen Bewerken', perm_manageBackup: 'Backup Beheer', perm_deleteOrders: 'Orders Verwijderen', perm_viewCosts: 'Kosten Bekijken',
     role_admin: 'Beheerder', role_manager: 'Manager', role_viewer: 'Kijker',
+    ar_section: 'Uitgebreide Realiteit (AR)', ar_enable: 'Schakel AR in voor Werknemers', ar_enable_desc: 'Werknemers kunnen 3D-modellen bekijken in Augmented Reality.',
+    request_camera: 'Camera Toestemming Aanvragen', request_location: 'GPS Toestemming Aanvragen',
+    perm_granted: 'Verleend', perm_denied: 'Geweigerd', perm_web: 'Browser (niet van toepassing)',
   },
   en: {
     general: 'General', security: 'Team Admin', customization: 'Colors & Tasks', production: 'Production', partners: 'Partners', workflow: 'Workflow', mobile: 'Mobile Admin',
@@ -155,6 +158,9 @@ export const SETTINGS_DICT: Record<string, Record<string, string>> = {
     perm_viewEmployees: 'View Staff', perm_editEmployees: 'Edit Staff', perm_viewStatistics: 'Statistics', perm_viewSettings: 'View Settings',
     perm_editSettings: 'Edit Settings', perm_manageBackup: 'Backup Management', perm_deleteOrders: 'Delete Orders', perm_viewCosts: 'View Costs',
     role_admin: 'Administrator', role_manager: 'Manager', role_viewer: 'Viewer',
+    ar_section: 'Augmented Reality (AR)', ar_enable: 'Enable AR for Workers', ar_enable_desc: 'Workers can view 3D models in Augmented Reality.',
+    request_camera: 'Request Camera Permission', request_location: 'Request GPS Permission',
+    perm_granted: 'Granted', perm_denied: 'Denied', perm_web: 'Browser (not applicable)',
   },
   it: {
     general: 'Generale', security: 'Gestione Team', customization: 'Colori & Task', production: 'Produzione', partners: 'Partner', workflow: 'Workflow', mobile: 'Admin Mobile',
@@ -177,5 +183,18 @@ export const SETTINGS_DICT: Record<string, Record<string, string>> = {
     perm_viewEmployees: 'Visualizza Personale', perm_editEmployees: 'Modifica Personale', perm_viewStatistics: 'Statistiche', perm_viewSettings: 'Visualizza Impostazioni',
     perm_editSettings: 'Modifica Impostazioni', perm_manageBackup: 'Gestione Backup', perm_deleteOrders: 'Elimina Ordini', perm_viewCosts: 'Visualizza Costi',
     role_admin: 'Amministratore', role_manager: 'Manager', role_viewer: 'Visualizzatore',
+    ar_section: 'Realtà Aumentata (AR)', ar_enable: 'Abilita AR per i Worker', ar_enable_desc: 'I worker possono visualizzare i modelli 3D in Realtà Aumentata.',
+    request_camera: 'Richiedi Permesso Fotocamera', request_location: 'Richiedi Permesso GPS',
+    perm_granted: 'Concesso', perm_denied: 'Negato', perm_web: 'Browser (non applicabile)',
+  },
+  pl: {
+    general: 'Ogólne', security: 'Zarzädzanie Zespołem', customization: 'Kolory & Zadania', production: 'Produkcja', partners: 'Partnerzy', workflow: 'Przepraca', mobile: 'Mobile Admin',
+    title: 'Ustawienia', subtitle: 'Panel Konfiguracyjny', language: 'Język', company_data: 'Dane Firmy', edit_data: 'Edytuj Dane',
+    company_name: 'Nazwa Firmy', logo: 'Logo', save_company: 'Zapisz Dane', cancel: 'Anuluj', unlock_msg: 'Wprowadź hasło aby edytować dane firmy.',
+    mob_perm_title: 'Ograniczenia Mobilne', mob_perm_desc: 'Kontroluj co widzą pracownicy.', perm_client: 'Pokaż Klienta', perm_address: 'Pokaż Adres', perm_photo: 'Zezwól na Zdjęcia', perm_draw: 'Przeglądaj Rysunki', no_workers: 'Brak skonfigurowanych pracowników',
+    ar_section: 'Rozszerzona Rzeczywistość (AR)', ar_enable: 'Włącz AR dla Pracowników', ar_enable_desc: 'Pracownicy mogą przeglądać modele 3D w Rozszerzonej Rzeczywistości.',
+    request_camera: 'Zażądaj Uprawnień do Aparatu', request_location: 'Zażądaj Uprawnień GPS',
+    perm_granted: 'Przyznano', perm_denied: 'Odmówiono', perm_web: 'Przeglądarka (nie dotyczy)',
+    role_admin: 'Administrator', role_manager: 'Menedżer', role_viewer: 'Obserwator',
   },
 };

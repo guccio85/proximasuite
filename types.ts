@@ -136,6 +136,9 @@ export interface CompanySettings {
   security?: {
     userPassword?: string;
   };
+
+  // v2.5.0 — AR flag: se true, i worker vedono il pulsante AR nel visualizzatore 3D
+  arEnabled?: boolean;
 }
 
 // v2.4.0 — Fatture / Spese di acquisto collegate a un ordine
