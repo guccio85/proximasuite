@@ -6,7 +6,7 @@
 // ============================================================
 
 /** Current application version — shown in the UI wherever {APP_VERSION} is used */
-export const APP_VERSION = 'v2.5.0';
+export const APP_VERSION = 'v2.5.1';
 
 /** Product name shown in the branding footer of the sidebar */
 export const APP_NAME = 'PROXIMA SUITE';
