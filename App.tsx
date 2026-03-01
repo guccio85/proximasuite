@@ -493,13 +493,15 @@ const App: React.FC = () => {
   }, []); // ← dependency array VUOTO: il timer resta attivo per tutta la vita dell'app
 
   // --- AUTO-SAVE TIMER (Every 30 mins) to Supabase ---
+  // NOTE: Orders are intentionally excluded — they are saved individually on each change
+  // via saveOrder(). Including them here would overwrite JSONB with "light" stubs
+  // (photos:[], timeLogs:[], drawings:[]) and destroy all order detail data.
   useEffect(() => {
       const timer = setInterval(async () => {
           if (stateRef.current.companySettings) {
               console.log("⏳ Auto-saving data to Supabase...");
               try {
                   await SupabaseAPI.saveAllData({
-                      orders: stateRef.current.orders,
                       workers: stateRef.current.workers,
                       workerPasswords: stateRef.current.workerPasswords,
                       availabilities: stateRef.current.availabilities,
@@ -577,17 +579,14 @@ const App: React.FC = () => {
   const handleInlineUpdate = async (id: string, field: string, value: any) => {
       savingOrderIdsRef.current.add(id);
       // Functional update — always reads latest prevOrders, never a stale closure
-      let savedOrder: WorkOrder | undefined;
-      setOrders(prev => {
-          const updated = prev.map(o => o.id === id ? { ...o, [field]: value } : o);
-          savedOrder = updated.find(o => o.id === id);
-          return updated;
-      });
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
       try {
-          // Small delay to let React flush the functional update before we read savedOrder
           await new Promise(r => setTimeout(r, 0));
+          // Fetch full detail first to avoid overwriting photos/timeLogs/drawings with empty stubs
+          const fullOrder = await SupabaseAPI.fetchOrderDetail(id);
           const latest = stateRef.current.orders.find(o => o.id === id);
-          if (latest) await SupabaseAPI.saveOrder(latest);
+          const base = fullOrder || latest;
+          if (base) await SupabaseAPI.saveOrder({ ...base, [field]: value });
       } finally {
           setTimeout(() => { savingOrderIdsRef.current.delete(id); }, 2000);
       }
@@ -818,20 +817,26 @@ const App: React.FC = () => {
     console.log('🔍 DEBUG App.tsx: urlView =', urlView, 'companySettings =', companySettings ? 'loaded' : 'null', 'workers =', workers.length);
   }
 
-  const handleSaveWorkLog = (log: WorkLog) => {
-      const updated = orders.map(o => o.id === log.orderId ? { ...o, timeLogs: [...(o.timeLogs || []), log] } : o);
-      setOrders(updated);
-      saveData({ orders: updated });
+  const handleSaveWorkLog = async (log: WorkLog) => {
+      // Fetch full detail first to preserve existing timeLogs, photos and drawings in JSONB
+      const fullOrder = await SupabaseAPI.fetchOrderDetail(log.orderId);
+      const base = fullOrder || orders.find(o => o.id === log.orderId);
+      if (!base) return;
+      const updatedOrder = { ...base, timeLogs: [...(base.timeLogs || []), log] };
+      setOrders(prev => prev.map(o => o.id === log.orderId ? { ...o, timeLogs: [...(o.timeLogs || []), log] } : o));
+      await SupabaseAPI.saveOrder(updatedOrder);
   };
 
   const handleSaveOrderPhoto = async (orderId: string, photo: Blob) => {
       const url = await SupabaseAPI.uploadOrderPhoto(orderId, photo);
       if (!url) { console.error('Photo upload failed'); return; }
-      setOrders(prev => {
-          const updated = prev.map(o => o.id === orderId ? { ...o, photos: [...(o.photos || []), url] } : o);
-          saveData({ orders: updated });
-          return updated;
-      });
+      // Fetch full detail first to preserve existing photos, timeLogs and drawings in JSONB
+      const fullOrder = await SupabaseAPI.fetchOrderDetail(orderId);
+      const base = fullOrder || orders.find(o => o.id === orderId);
+      if (!base) return;
+      const updatedOrder = { ...base, photos: [...(base.photos || []), url] };
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, photos: [...(o.photos || []), url] } : o));
+      await SupabaseAPI.saveOrder(updatedOrder);
   };
 
   const handleArEnabledChange = (val: boolean) => {
