@@ -410,7 +410,7 @@ const t = createTranslator(SETTINGS_DICT, language);
                                                                         setEditAdminRole(role);
                                                                         if (role === 'admin') setEditAdminPerms({...DEFAULT_ADMIN_PERMISSIONS});
                                                                         else if (role === 'manager') setEditAdminPerms({...DEFAULT_ADMIN_PERMISSIONS, editSettings: false, manageBackup: false, deleteOrders: false});
-                                                                        else setEditAdminPerms({viewPlanner: true, editPlanner: false, viewOrders: true, editOrders: false, viewEmployees: true, editEmployees: false, viewStatistics: true, viewSettings: false, editSettings: false, manageBackup: false, deleteOrders: false});
+                                                                        else setEditAdminPerms({viewPlanner: true, editPlanner: false, viewOrders: true, editOrders: false, viewEmployees: true, editEmployees: false, viewStatistics: true, viewSettings: false, editSettings: false, manageBackup: false, deleteOrders: false, viewCosts: false});
                                                                     }}
                                                                     className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all border ${editAdminRole === role ? (theme === 'gold' ? 'bg-[#d4af37]/20 border-[#d4af37] text-[#d4af37]' : 'bg-[#00f2fe]/20 border-[#00f2fe] text-[#00f2fe]') : 'border-gray-700 text-gray-500 hover:border-gray-500'}`}>
                                                                         {t(`role_${role}`)}

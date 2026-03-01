@@ -183,7 +183,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
       return desc.replace(/\[BEHANDELING:.*?\]/gi, '').trim();
   };
 
-  const getInitials = (name: string | undefined) => {
+  const getInitials = (name: string | undefined): string => {
       if (!name) return '';
       if (name.includes('+')) {
           return name.split('+').map(n => getInitials(n.trim())).join('+');
@@ -299,7 +299,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
         const weeksElapsed = Math.floor(daysElapsed / 7);
 
         if (daysElapsed >= 0 && weeksElapsed < ra.numberOfWeeks) {
-          let typeStr = ra.type;
+          let typeStr: string = ra.type;
           if (ra.timeOfDay !== 'ALL_DAY') {
             typeStr = `${ra.type}_${ra.timeOfDay}`;
           }
@@ -694,20 +694,20 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                         const isMeasurement = isoDate === order.measurementDate;
                         const isDelivery = isoDate === order.deliveryDate;
                         const presStart = order.preservationDate;
-                        const presEnd = order.preservationEndDate || presStart;
+                        const presEnd: string = order.preservationEndDate || presStart || '';
                         const hasPreservationFlag = order.poedercoaten || order.stralenPrimer || order.schoopperenPrimer || order.natlakken || order.thermischVerzinkt;
                         const isPreservation = presStart && isoDate >= presStart && isoDate <= presEnd && hasPreservationFlag;
                         const prepStart = order.workPreparationDate;
-                        const prepEnd = order.workPreparationEndDate || prepStart;
+                        const prepEnd: string = order.workPreparationEndDate || prepStart || '';
                         const isPreparation = prepStart && isoDate >= prepStart && isoDate <= prepEnd;
                         const installStart = order.installationDate;
-                        const installEnd = order.installationEndDate || installStart;
+                        const installEnd: string = order.installationEndDate || installStart || '';
                         const isInstallation = installStart && isoDate >= installStart && isoDate <= installEnd;
                         const kbwStart = order.kbwDate;
-                        const kbwEnd = order.kbwEndDate || kbwStart;
+                        const kbwEnd: string = order.kbwEndDate || kbwStart || '';
                         const isKbw = kbwStart && isoDate >= kbwStart && isoDate <= kbwEnd;
                         const plwStart = order.plwDate;
-                        const plwEnd = order.plwEndDate || plwStart;
+                        const plwEnd: string = order.plwEndDate || plwStart || '';
                         const isPlw = plwStart && isoDate >= plwStart && isoDate <= plwEnd;
                         const inRange = order.startDate && order.endDate && isoDate > order.startDate && isoDate < order.endDate;
 

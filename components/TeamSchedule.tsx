@@ -177,7 +177,7 @@ export const TeamSchedule: React.FC<TeamScheduleProps> = ({
 
   // Calculate all dates from recurring absences for display
   const getRecurringAbsencesForDate = (worker: string, dateIso: string) => {
-    const absences = [];
+    const absences: any[] = [];
     recurringAbsences.forEach(ra => {
       if (ra.worker === worker) {
         const targetDate = new Date(dateIso);
@@ -212,7 +212,7 @@ export const TeamSchedule: React.FC<TeamScheduleProps> = ({
 
   // Helper to find all activities for a worker on a specific date
   const getWorkerActivities = (worker: string, dateIso: string) => {
-    const activities = [];
+    const activities: any[] = [];
 
     // 1. Check Availability (Sick/Vacation/Absent) - Priority
     const userAvailabilities = availabilities.filter(a => a.worker === worker && a.date === dateIso);
