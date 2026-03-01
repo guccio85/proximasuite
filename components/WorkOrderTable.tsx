@@ -161,6 +161,7 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
   const [descriptionModalOpen, setDescriptionModalOpen] = useState(false);
   const [editingDescriptionOrder, setEditingDescriptionOrder] = useState<WorkOrder | null>(null);
   const [tempDescription, setTempDescription] = useState('');
+  const [photoLightbox, setPhotoLightbox] = useState<string | null>(null);
 
   const openDescriptionModal = (order: WorkOrder, e: React.MouseEvent) => {
       e.stopPropagation(); 
@@ -634,8 +635,16 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                     {/* 2. CLIENT */}
                     <td onClick={() => onOrderClick && onOrderClick(order)} style={{ width: colWidths.opdrachtgever, minWidth: colWidths.opdrachtgever, left: posClient, ...rowStyle, ...borderStyle }} className="sticky z-30 bg-white group-hover:bg-gray-50 text-[1em] cursor-pointer align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                         <div style={{...cellInnerStyle, paddingLeft: '8px', justifyContent: 'flex-start'}}>
-                            <div className="text-gray-900 hover:text-blue-600 font-bold truncate w-full flex items-center h-full">
+                            <div className="text-gray-900 hover:text-blue-600 font-bold truncate w-full flex items-center h-full gap-1">
                                 <LongPressEditable value={order.opdrachtgever} onSave={(val) => onInlineUpdate && onInlineUpdate(order.id, 'opdrachtgever', val)} />
+                                {order.photos && order.photos.length > 0 && order.photos[0].startsWith('http') && (
+                                    <img
+                                        src={order.photos[0]}
+                                        alt="foto"
+                                        onClick={(e) => { e.stopPropagation(); setPhotoLightbox(order.photos![0]); }}
+                                        className="w-7 h-7 rounded object-cover shrink-0 border border-gray-200 cursor-zoom-in hover:opacity-80 transition-opacity"
+                                    />
+                                )}
                             </div>
                         </div>
                     </td>
@@ -803,6 +812,13 @@ export const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
             </table>
          </div>
       </div>
+      {/* PHOTO LIGHTBOX */}
+      {photoLightbox && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center" onClick={() => setPhotoLightbox(null)}>
+              <img src={photoLightbox} className="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-2xl" alt="foto" />
+              <button onClick={() => setPhotoLightbox(null)} className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/80"><X size={24} /></button>
+          </div>
+      )}
     </div>
   );
 };

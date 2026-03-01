@@ -26,7 +26,7 @@ interface WerkplaatsViewProps {
   workerPasswords?: WorkerPasswords; 
   onSaveOrder?: (order: WorkOrder) => void; 
   onDeleteLog?: (orderId: string, logId: string) => void;
-  onSaveOrderPhoto?: (orderId: string, photoBase64: string) => void;
+  onSaveOrderPhoto?: (orderId: string, photo: Blob) => void;
   onFetchOrderDetail?: (orderId: string) => Promise<WorkOrder | null>;
   onSaveWorkLog?: (orderId: string, log: TimeLog) => void;
   language?: Language;
@@ -90,7 +90,31 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Ridimensiona e comprime un'immagine prima di salvarla come base64
+  // Ridimensiona e comprime un'immagine, ritorna un Blob pronto per l'upload
+  const resizeAndCompressToBlob = (file: File, maxSize = 1200, quality = 0.78): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) { height = Math.round((height / width) * maxSize); width = maxSize; }
+          else { width = Math.round((width / height) * maxSize); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  // Legacy: ritorna base64 (mantenuto per compatibilità)
   const resizeAndCompress = (file: File, maxSize = 1200, quality = 0.78): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -182,17 +206,19 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
       const file = e.target.files?.[0];
       if (!file || !selectedOrderForLog || !onSaveOrderPhoto) return;
       try {
-          const compressed = await resizeAndCompress(file);
-          onSaveOrderPhoto(selectedOrderForLog.id, compressed);
-          setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), compressed] }) : null);
+          const blob = await resizeAndCompressToBlob(file);
+          // Optimistic local preview via object URL (replaced by real URL after upload sync)
+          const localPreviewUrl = URL.createObjectURL(blob);
+          setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), localPreviewUrl] }) : null);
+          onSaveOrderPhoto(selectedOrderForLog.id, blob);
       } catch {
-          // Fallback: usa il file originale senza compressione
+          // Fallback: convert to blob via FileReader + fetch
           const reader = new FileReader();
           reader.onload = (ev) => {
-              if (ev.target?.result) {
-                  const base64 = ev.target.result as string;
-                  onSaveOrderPhoto(selectedOrderForLog.id, base64);
-                  setSelectedOrderForLog(prev => prev ? ({ ...prev, photos: [...(prev.photos || []), base64] }) : null);
+              if (ev.target?.result && selectedOrderForLog && onSaveOrderPhoto) {
+                  fetch(ev.target.result as string).then(r => r.blob()).then(b => {
+                      onSaveOrderPhoto(selectedOrderForLog!.id, b);
+                  });
               }
           };
           reader.readAsDataURL(file);

@@ -818,10 +818,14 @@ const App: React.FC = () => {
       saveData({ orders: updated });
   };
 
-  const handleSaveOrderPhoto = (orderId: string, photoBase64: string) => {
-      const updated = orders.map(o => o.id === orderId ? { ...o, photos: [...(o.photos || []), photoBase64] } : o);
-      setOrders(updated);
-      saveData({ orders: updated });
+  const handleSaveOrderPhoto = async (orderId: string, photo: Blob) => {
+      const url = await SupabaseAPI.uploadOrderPhoto(orderId, photo);
+      if (!url) { console.error('Photo upload failed'); return; }
+      setOrders(prev => {
+          const updated = prev.map(o => o.id === orderId ? { ...o, photos: [...(o.photos || []), url] } : o);
+          saveData({ orders: updated });
+          return updated;
+      });
   };
 
   // Print Daily Hours Report

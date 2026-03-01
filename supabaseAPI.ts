@@ -53,7 +53,10 @@ export const fetchAllOrders = async (since?: string): Promise<WorkOrder[]> => {
 
     // Strip heavy Base64 fields from the JSONB blob — they are loaded on demand via fetchOrderDetail(id)
     const lightData = row.data && typeof row.data === 'object' ? { ...row.data } : {};
-    delete lightData.photos;
+    // Keep photos that are public URLs (lightweight); strip base64 blobs
+    if (lightData.photos) {
+      lightData.photos = (lightData.photos as string[]).filter((p: string) => p.startsWith('http'));
+    }
     delete lightData.timeLogs;
     delete lightData.drawings;
 
@@ -416,6 +419,21 @@ export const deleteGlbModel = async (glbUrl: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error deleting GLB model:', error);
+  }
+};
+
+export const uploadOrderPhoto = async (orderId: string, blob: Blob): Promise<string | null> => {
+  try {
+    const fileName = `${orderId}/${Date.now()}.jpg`;
+    const { error } = await supabase.storage
+      .from('order-photos')
+      .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    const { data } = supabase.storage.from('order-photos').getPublicUrl(fileName);
+    return data.publicUrl;
+  } catch (err) {
+    console.error('Error uploading order photo:', err);
+    return null;
   }
 };
 
