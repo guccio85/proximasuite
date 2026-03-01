@@ -533,7 +533,9 @@ const App: React.FC = () => {
             : (isFullSave && companySettings ? { ...companySettings, taskColors } : undefined);
 
           await SupabaseAPI.saveAllData({
-              orders: updatedData.orders || orders,
+              // NOTE: orders are intentionally EXCLUDED — they must only be saved
+              // individually via saveOrder() / handleSaveOrder() to prevent JSONB overwrite
+              // with light stubs (photos:[], timeLogs:[], drawings:[]).
               workers: updatedData.workers || workers,
               workerPasswords: updatedData.workerPasswords || workerPasswords,
               availabilities: updatedData.availabilities || availabilities,
@@ -724,7 +726,7 @@ const App: React.FC = () => {
     }
     const remaining = orders.filter(o => o.status !== OrderStatus.COMPLETED);
     setOrders(remaining);
-    saveData({ orders: remaining });
+    // deleteOrder() already removed from DB — no bulk save needed
   };
 
   // Download backup JSON con dialog di salvataggio
@@ -843,7 +845,8 @@ const App: React.FC = () => {
       if (!companySettings) return;
       const updated = { ...companySettings, arEnabled: val };
       setCompanySettings(updated);
-      saveData({ settings: updated });
+      settingsProtectedUntilRef.current = Date.now() + 15000;
+      SupabaseAPI.saveCompanySettings(updated);
   };
 
   // Print Daily Hours Report
@@ -1317,10 +1320,9 @@ const App: React.FC = () => {
               const effectiveCardFontSize = Math.round(FIXED_CARD_FONT * cardFontSizeMultiplier);
               const handleDeleteArchivedOrder = async (orderId: string) => {
                   if (!confirm('Eliminare questo ordine definitivamente?')) return;
-                  const updatedOrders = orders.filter(o => o.id !== orderId);
-                  setOrders(updatedOrders);
+                  setOrders(prev => prev.filter(o => o.id !== orderId));
                   await SupabaseAPI.deleteOrder(orderId);
-                  saveData({ orders: updatedOrders });
+                  // deleteOrder() already removed from DB — no bulk save needed
               };
               return (
                   <div className="absolute inset-0 w-full h-full p-2">
@@ -1514,15 +1516,20 @@ const App: React.FC = () => {
                                                 SupabaseAPI.saveSubcontractorsDirect(newList);
                                                 // Auto-rimuovi la ditta dagli ordini e segna come mancante
                                                 if (deletedSub) {
-                                                    const hasAffected = orders.some(o => o.subcontractorName === deletedSub.name && o.isSubcontracted);
-                                                    if (hasAffected) {
-                                                        const updatedOrders = orders.map(o =>
+                                                    const affectedOrders = orders.filter(o => o.subcontractorName === deletedSub.name && o.isSubcontracted);
+                                                    if (affectedOrders.length > 0) {
+                                                        setOrders(prev => prev.map(o =>
                                                             o.subcontractorName === deletedSub.name && o.isSubcontracted
                                                                 ? { ...o, isSubcontracted: false, subcontractorName: undefined, subcontractorDeliveryDate: undefined, missingAssignment: true }
                                                                 : o
-                                                        );
-                                                        setOrders(updatedOrders);
-                                                        saveData({ orders: updatedOrders });
+                                                        ));
+                                                        // Save each affected order individually (fetch full detail first to preserve JSONB)
+                                                        for (const affected of affectedOrders) {
+                                                            SupabaseAPI.fetchOrderDetail(affected.id).then(full => {
+                                                                const base = full || affected;
+                                                                SupabaseAPI.saveOrder({ ...base, isSubcontracted: false, subcontractorName: undefined, subcontractorDeliveryDate: undefined, missingAssignment: true });
+                                                            });
+                                                        }
                                                     }
                                                 }
                     }}
