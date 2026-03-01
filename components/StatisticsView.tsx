@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { WorkOrder, WorkLog, PurchaseInvoice, Language, TaskColors } from '../types';
 import { BarChart3, Clock, PieChart, Layers, TrendingUp, List, Trash2, Edit2, Check, X, Lock, Filter, Building2, FileText, Info, Hexagon, Euro, Receipt } from 'lucide-react';
+import { APP_VERSION } from '../constants/AppConfig';
 
 interface StatisticsViewProps {
   orders: WorkOrder[];
@@ -26,7 +27,7 @@ export const StatisticsView: React.FC<StatisticsViewProps> = ({
   const [selectedOrderId, setSelectedOrderId] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<'hours' | 'costs'>('hours');
 
-  const VERSION = "v2.4.0";
+  const VERSION = APP_VERSION;
 
   const t = (key: string) => {
       const dict: Record<string, Record<string, string>> = {

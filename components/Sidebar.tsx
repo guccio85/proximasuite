@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Settings, FileText, UserCog, Plus, Users, CalendarClock, ChevronLeft, ChevronRight, Box, LogOut, QrCode, BarChart3, Globe, Hexagon, Palette, Coins } from 'lucide-react';
 import { CompanySettings, Language } from '../types';
+import { APP_VERSION, APP_NAME, MAKER_NAME, DEFAULT_COMPANY_NAME, PROD_URL } from '../constants/AppConfig';
+import { SIDEBAR_DICT, createTranslator } from '../i18n';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -31,87 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showQr, setShowQr] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
 
-  // --- CONFIGURAZIONE v2.3.5 ---
-  const VERSION = "v2.3.5";
-  
-  // Cloud URL for mobile access - update this with your actual cloud URL
-  const CLOUD_BASE_URL = 'https://proximasuite.vercel.app'; // URL Vercel di produzione
-
   useEffect(() => {
-    // Generate QR URL - always use cloud URL for internet-wide access
-    const generateQrUrl = () => {
-      // Use cloud URL with werkplaats view
-      setQrUrl(`${CLOUD_BASE_URL}/?view=werkplaats`);
-    };
-    
-    generateQrUrl();
+    // Generate QR URL — uses PROD_URL from AppConfig
+    setQrUrl(`${PROD_URL}/?view=werkplaats`);
   }, []);
 
-  const t = (key: string) => {
-      const dict: Record<string, Record<string, string>> = {
-          nl: { 
-            order_planning: "Order Planning", 
-            team_schedule: "Team Rooster", 
-            employees: "Personeel Lijst", 
-            rubrica_ditte: "Rubrica Ditte",
-            archive: "Order Archief", 
-            statistics: "Uren Statistieken", 
-            costs: "Kosten Beheer",
-            settings: "Instellingen & Backup", 
-            new_order: "NIEUWE ORDER", 
-            scan_mobile: "Scan voor Mobiel", 
-            language: "Taal Selecteren", 
-            powered_by: "Powered by", 
-            wifi_warn: "Zorg dat mobiel op WiFi zit!", 
-            select_theme: "Thema Selecteren", 
-            theme_gold: "Goud", 
-            theme_space: "Space Blue",
-                        theme_space_light: "Space Blue Light",
-            version_label: "Versie"
-          },
-          en: { 
-                        theme_space_light: "Space Blue Light",
-            order_planning: "Order Planning", 
-            team_schedule: "Team Schedule", 
-            employees: "Staff List", 
-            rubrica_ditte: "Contractor Directory",
-            archive: "Order Archive", 
-            statistics: "Statistics", 
-            costs: "Cost Management",
-            settings: "Settings & Backup", 
-            new_order: "NEW ORDER", 
-            scan_mobile: "Scan Mobile", 
-            language: "Language", 
-            powered_by: "Powered by", 
-            wifi_warn: "Ensure mobile is on WiFi!", 
-            select_theme: "Select Theme", 
-            theme_gold: "Gold", 
-            theme_space: "Space Blue",
-            version_label: "Version"
-          },
-          it: { 
-            order_planning: "Piano Ordini", 
-            team_schedule: "Orari Team", 
-            employees: "Lista Personale", 
-            rubrica_ditte: "Rubrica Ditte",
-            archive: "Archivio Ordini", 
-            statistics: "Statistiche", 
-            costs: "Gestione Costi",
-            settings: "Impostazioni & Backup", 
-            new_order: "NUOVO ORDINE", 
-            scan_mobile: "Mobile QR", 
-            language: "Lingua", 
-            powered_by: "Sviluppato da", 
-            wifi_warn: "Assicurati di essere in WiFi!", 
-            select_theme: "Seleziona Tema", 
-            theme_gold: "Oro", 
-            theme_space: "Blu Spaziale",
-                        theme_space_light: "Blu Spaziale Chiaro",
-            version_label: "Versione"
-          }
-      };
-      return dict[currentLang]?.[key] || key;
-  };
+  const t = createTranslator(SIDEBAR_DICT, currentLang);
 
   return (
     <>
@@ -133,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             {!isCollapsed && (
                 <div className="flex flex-col">
-                    <span className={`text-xl font-black tracking-tighter ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'} drop-shadow-md leading-none`}>{companySettings?.name || 'SNEP'}</span>
+                    <span className={`text-xl font-black tracking-tighter ${theme === 'gold' ? 'text-[#d4af37]' : theme === 'space-light' ? 'text-slate-800' : 'text-[#00f2fe]'} drop-shadow-md leading-none`}>{companySettings?.name || DEFAULT_COMPANY_NAME}</span>
                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Werkbeheer</span>
                 </div>
             )}
@@ -202,9 +129,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#d4af37] to-[#aa8c2c] text-[#0a0a0a] flex items-center justify-center mb-1 shadow-[0_0_15px_rgba(212,175,55,0.3)]">
                      <Hexagon size={18} className="fill-current" />
                   </div>
-                  <span className="text-[12px] font-thin tracking-[0.3em] text-[#d4af37]">PROXIMA SUITE</span>
-                  <span className="text-[9px] text-gray-500 uppercase tracking-widest">{t('powered_by')} <span className="text-[#d4af37] font-bold">SG TechLab</span></span>
-                  <span className="text-[8px] text-gray-600 font-mono mt-1 uppercase">{t('version_label')} {VERSION}</span>
+                  <span className="text-[12px] font-thin tracking-[0.3em] text-[#d4af37]">{APP_NAME}</span>
+                  <span className="text-[9px] text-gray-500 uppercase tracking-widest">{t('powered_by')} <span className="text-[#d4af37] font-bold">{MAKER_NAME}</span></span>
+                  <span className="text-[8px] text-gray-600 font-mono mt-1 uppercase">{t('version_label')} {APP_VERSION}</span>
               </div>
             </>
           )}

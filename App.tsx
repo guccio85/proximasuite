@@ -15,6 +15,7 @@ import { SetupWizard } from './components/SetupWizard';
 import { WorkOrder, WorkerAvailability, GlobalDay, TaskColors, CompanySettings, WorkLog, GlobalDayType, Language, OrderStatus, Subcontractor, RecurringAbsence, WorkerContact, PurchaseInvoice } from './types';
 import * as SupabaseAPI from './supabaseAPI';
 import { Capacitor } from '@capacitor/core';
+import { APP_VERSION, STORAGE_PREFIX } from './constants/AppConfig';
 
 // True when running inside the native Android/iOS Capacitor app
 const isNativeApp = Capacitor.isNativePlatform();
@@ -167,10 +168,10 @@ const App: React.FC = () => {
   
   // --- Language State (persisted in localStorage) ---
   const [currentLang, setCurrentLang] = useState<Language>(() => {
-    try { return (localStorage.getItem('snep_lang') as Language) || 'nl'; } catch { return 'nl'; }
+    try { return (localStorage.getItem(`${STORAGE_PREFIX}lang`) as Language) || 'nl'; } catch { return 'nl'; }
   });
   useEffect(() => {
-    try { localStorage.setItem('snep_lang', currentLang); } catch {}
+    try { localStorage.setItem(`${STORAGE_PREFIX}lang`, currentLang); } catch {}
   }, [currentLang]);
 
   // --- UI State ---
@@ -179,20 +180,20 @@ const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [rowHeightMultiplier, setRowHeightMultiplier] = useState<number>(() =>
-    parseFloat(localStorage.getItem('snep_rowHeightMultiplier') || '1.0')
+    parseFloat(localStorage.getItem(`${STORAGE_PREFIX}rowHeightMultiplier`) || '1.0')
   );
   const [gridLineThickness, setGridLineThickness] = useState<number>(() =>
-    parseFloat(localStorage.getItem('snep_gridLineThickness') || '1')
+    parseFloat(localStorage.getItem(`${STORAGE_PREFIX}gridLineThickness`) || '1')
   );
   const [cardFontSizeMultiplier, setCardFontSizeMultiplier] = useState<number>(() =>
-    parseFloat(localStorage.getItem('snep_cardFontSizeMultiplier') || '1.0')
+    parseFloat(localStorage.getItem(`${STORAGE_PREFIX}cardFontSizeMultiplier`) || '1.0')
   );
   const [formFontSizeMultiplier, setFormFontSizeMultiplier] = useState<number>(() =>
-    parseFloat(localStorage.getItem('snep_formFontSizeMultiplier') || '1.0')
+    parseFloat(localStorage.getItem(`${STORAGE_PREFIX}formFontSizeMultiplier`) || '1.0')
   );
   const [showRowHeightSlider, setShowRowHeightSlider] = useState(false);
     const [showCompleted, setShowCompleted] = useState<boolean>(() =>
-        localStorage.getItem('snep_showCompleted') === 'true'
+        localStorage.getItem(`${STORAGE_PREFIX}showCompleted`) === 'true'
     );
   
   // --- Rubrica Ditte Form State ---
@@ -210,44 +211,44 @@ const App: React.FC = () => {
   const [customHeight, setCustomHeight] = useState(1189); // A1 default
   
   // --- Login State ---
-  const [currentAdmin, setCurrentAdmin] = useState<string | null>(() => localStorage.getItem('snep_currentAdmin'));
-  const [showLoginModal, setShowLoginModal] = useState(!localStorage.getItem('snep_currentAdmin'));
+  const [currentAdmin, setCurrentAdmin] = useState<string | null>(() => localStorage.getItem(`${STORAGE_PREFIX}currentAdmin`));
+  const [showLoginModal, setShowLoginModal] = useState(!localStorage.getItem(`${STORAGE_PREFIX}currentAdmin`));
   
   useEffect(() => {
     if (currentAdmin) {
-      localStorage.setItem('snep_currentAdmin', currentAdmin);
+      localStorage.setItem(`${STORAGE_PREFIX}currentAdmin`, currentAdmin);
     } else {
-      localStorage.removeItem('snep_currentAdmin');
+      localStorage.removeItem(`${STORAGE_PREFIX}currentAdmin`);
     }
   }, [currentAdmin]);
   
   // TEMA GLOBALE v2.3.1
   const [theme, setTheme] = useState<'gold' | 'space' | 'space-light'>(() => 
-    (localStorage.getItem('snep_theme') as 'gold' | 'space' | 'space-light') || 'space'
+    (localStorage.getItem(`${STORAGE_PREFIX}theme`) as 'gold' | 'space' | 'space-light') || 'space'
   );
 
   useEffect(() => {
-      localStorage.setItem('snep_theme', theme);
+      localStorage.setItem(`${STORAGE_PREFIX}theme`, theme);
   }, [theme]);
 
   useEffect(() => {
-      localStorage.setItem('snep_showCompleted', showCompleted ? 'true' : 'false');
+      localStorage.setItem(`${STORAGE_PREFIX}showCompleted`, showCompleted ? 'true' : 'false');
   }, [showCompleted]);
 
   useEffect(() => {
-      localStorage.setItem('snep_rowHeightMultiplier', rowHeightMultiplier.toString());
+      localStorage.setItem(`${STORAGE_PREFIX}rowHeightMultiplier`, rowHeightMultiplier.toString());
   }, [rowHeightMultiplier]);
 
   useEffect(() => {
-      localStorage.setItem('snep_gridLineThickness', gridLineThickness.toString());
+      localStorage.setItem(`${STORAGE_PREFIX}gridLineThickness`, gridLineThickness.toString());
   }, [gridLineThickness]);
 
   useEffect(() => {
-      localStorage.setItem('snep_cardFontSizeMultiplier', cardFontSizeMultiplier.toString());
+      localStorage.setItem(`${STORAGE_PREFIX}cardFontSizeMultiplier`, cardFontSizeMultiplier.toString());
   }, [cardFontSizeMultiplier]);
 
   useEffect(() => {
-      localStorage.setItem('snep_formFontSizeMultiplier', formFontSizeMultiplier.toString());
+      localStorage.setItem(`${STORAGE_PREFIX}formFontSizeMultiplier`, formFontSizeMultiplier.toString());
   }, [formFontSizeMultiplier]);
   
   // NEW: Save Feedback State
@@ -292,7 +293,7 @@ const App: React.FC = () => {
       if (data.settings) {
          // Accept settings even if company name is empty — don't block on an empty name field
          setCompanySettings(data.settings);
-         localStorage.setItem('snep_settings', JSON.stringify(data.settings));
+         localStorage.setItem(`${STORAGE_PREFIX}settings`, JSON.stringify(data.settings));
          if (data.settings.taskColors) setTaskColors(data.settings.taskColors);
          SupabaseAPI.fetchCompanyLogo().then(logoUrl => {
            if (logoUrl) setCompanySettings(prev => prev ? { ...prev, logoUrl } : prev);
@@ -1777,7 +1778,7 @@ const App: React.FC = () => {
     }`}>
         {currentView === 'archief' ? <FileText size={18}/> : <LayoutGrid size={18}/>}
         {currentView === 'archief' ? t.archiveTitle : t.dashboardTitle}
-        <span className={`ml-3 text-[10px] font-black px-2 py-0.5 rounded-full ${theme === 'gold' ? 'bg-[#d4af37] text-black' : 'bg-blue-600 text-white'}`}>v2.3.5</span>
+        <span className={`ml-3 text-[10px] font-black px-2 py-0.5 rounded-full ${theme === 'gold' ? 'bg-[#d4af37] text-black' : 'bg-blue-600 text-white'}`}>{APP_VERSION}</span>
     </h2>
                                     <div className="flex items-center gap-2">
                                         <label className="flex items-center gap-2 mr-2">
