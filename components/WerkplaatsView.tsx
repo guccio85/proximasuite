@@ -2,6 +2,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { WorkOrder, OrderStatus, Language, TimeLog, WorkLog, WorkerPasswords, Department, MobilePermissions } from '../types';
 import { Search, Calendar, MapPin, Hash, User, RefreshCw, AlertCircle, CheckCircle, Clock, Info, Hammer, PaintBucket, Layers, Wrench, Truck, LogOut, Lock, ChevronLeft, Plus, Save, ArrowRight, Check, Trash2, Camera, FileText, Eye, X, Box } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { ARPlugin } from '../plugins/ARPlugin';
 
 // Declare model-viewer web component for TypeScript
 declare global {
@@ -93,6 +95,21 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
   const [viewingModel, setViewingModel] = useState<string | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isNativeAndroid = Capacitor.isNativePlatform();
+
+  // Launch Google Scene Viewer directly via native plugin (bypasses WebView URL handling)
+  const handleNativeAR = async () => {
+    if (!viewingModel) return;
+    const encodedFile = encodeURIComponent(viewingModel);
+    const fallback = encodeURIComponent('https://localhost/#model-viewer-no-ar-fallback');
+    const intentUri = `intent://arvr.google.com/scene-viewer/1.0?mode=ar_preferred&disable_occlusion=true&file=${encodedFile}#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${fallback};end;`;
+    try {
+      await ARPlugin.openSceneViewer({ intentUri });
+    } catch (e) {
+      console.error('AR launch failed:', e);
+    }
+  };
 
   // Ridimensiona e comprime un'immagine, ritorna un Blob pronto per l'upload
   const resizeAndCompressToBlob = (file: File, maxSize = 1200, quality = 0.78): Promise<Blob> => {
@@ -354,7 +371,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                           <span className="font-bold text-lg flex items-center gap-2"><Box size={20}/> {t('model_3d')}</span>
                           <button onClick={() => setViewingModel(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"><X size={24} className="text-white"/></button>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 relative">
                           <model-viewer
                               src={viewingModel}
                               alt="3D Model"
@@ -365,7 +382,7 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                               touch-action="pan-y"
                               style={{ width: '100%', height: '100%', background: '#111' }}
                           >
-                              {(isAdmin || arEnabled) && (
+                              {(isAdmin || arEnabled) && !isNativeAndroid && (
                                   <button
                                       slot="ar-button"
                                       style={{
@@ -382,6 +399,23 @@ export const WerkplaatsView: React.FC<WerkplaatsViewProps> = ({
                                   </button>
                               )}
                           </model-viewer>
+                          {/* AR button for native Android — calls plugin directly, bypasses WebView */}
+                          {(isAdmin || arEnabled) && isNativeAndroid && (
+                              <button
+                                  onClick={handleNativeAR}
+                                  style={{
+                                      position: 'absolute', bottom: '16px', right: '16px', zIndex: 10,
+                                      padding: '10px 18px', borderRadius: '10px',
+                                      fontWeight: 'bold', fontSize: '13px',
+                                      display: 'flex', alignItems: 'center', gap: '6px',
+                                      cursor: 'pointer', border: 'none',
+                                      background: selectedTheme === 'gold' ? '#d4af37' : '#00f2fe',
+                                      color: '#000',
+                                  }}
+                              >
+                                  👁️ {t('view_ar')}
+                              </button>
+                          )}
                       </div>
                   </div>
               )}
