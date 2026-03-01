@@ -359,11 +359,12 @@ export const fetchCompanySettings = async (): Promise<CompanySettings | null> =>
 
     // Construct CompanySettings object (include ALL fetched data)
     const rawMobilePerms = settingsData?.mobile_permissions || {};
-    const { __logoUrl, __workerRates, ...cleanMobilePerms } = rawMobilePerms as any;
+    const { __logoUrl, __workerRates, __arEnabled, ...cleanMobilePerms } = rawMobilePerms as any;
     const settings: CompanySettings = {
       name: settingsData?.company_name || '',
       logoUrl: __logoUrl || undefined, // logo_url excluded from sync; loaded once at startup via fetchCompanyLogo()
       workerRates: (__workerRates && typeof __workerRates === 'object') ? __workerRates : undefined,
+      arEnabled: __arEnabled === true,
       primaryColor: undefined, // column removed from schema — not used
       taskColors: taskColors, // Include fetched colors
       adminPassword: settingsData?.admin_password || '1111',
@@ -553,13 +554,14 @@ export const saveCompanyDetailsDirect = async (name: string, logoUrl?: string | 
 
 export const saveCompanySettings = async (settings: CompanySettings): Promise<boolean> => {
   try {
-    // Merge logoUrl + workerRates into mobile_permissions JSONB (no dedicated columns needed)
+    // Merge logoUrl + workerRates + arEnabled into mobile_permissions JSONB (no dedicated columns needed)
     const mobilePermsWithLogo = {
       ...(settings.mobilePermissions || {}),
       __logoUrl: settings.logoUrl || null,
       __workerRates: settings.workerRates && Object.keys(settings.workerRates).length > 0
         ? settings.workerRates
-        : null
+        : null,
+      __arEnabled: settings.arEnabled ?? false
     };
 
     // Save basic settings
