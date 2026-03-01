@@ -12,7 +12,7 @@ import com.getcapacitor.BridgeWebViewClient;
 public class MainActivity extends BridgeActivity {
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         // Allow intent:// URLs so model-viewer AR (Scene Viewer) works inside WebView
         bridge.getWebView().setWebViewClient(new BridgeWebViewClient(bridge) {
