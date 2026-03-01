@@ -1,6 +1,5 @@
 package com.proxima.mobile;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.WebResourceRequest;
@@ -24,7 +23,7 @@ public class MainActivity extends BridgeActivity {
                         Intent intent = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME);
                         startActivity(intent);
                         return true;
-                    } catch (ActivityNotFoundException | Exception e) {
+                    } catch (Exception e) {
                         return false;
                     }
                 }
