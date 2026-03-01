@@ -2,6 +2,7 @@ package com.proxima.mobile;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 
@@ -11,8 +12,8 @@ import com.getcapacitor.BridgeWebViewClient;
 public class MainActivity extends BridgeActivity {
 
     @Override
-    public void onStart() {
-        super.onStart();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         // Allow intent:// URLs so model-viewer AR (Scene Viewer) works inside WebView
         bridge.getWebView().setWebViewClient(new BridgeWebViewClient(bridge) {
             @Override
